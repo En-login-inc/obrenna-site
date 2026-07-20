@@ -1,0 +1,88 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PublicHeader from "../components/PublicHeader.astro";
+import PublicFooter from "../components/PublicFooter.astro";
+import PageHero from "../components/PageHero.astro";
+import Eyebrow from "../components/Eyebrow.astro";
+import Icon from "../components/Icon.astro";
+
+const cloudData = ["Account identity", "Organization membership", "Invitations", "Device enrollment metadata", "Machine and service health", "Tool schema hashes", "Policy configuration", "Redacted confirmation metadata"];
+const localData = ["Prompts and chat history", "Model inputs and outputs", "MCP arguments and results", "Private files and documents", "Data-store responses", "MCP credentials and API keys", "Local model memory", "Tool execution contents"];
+const limitations = [
+  "Local MCP executables are trusted software, not sandboxed code.",
+  "Schema approval confirms what changed; it does not prove a tool is safe.",
+  "VPN, endpoint security, backups and patching remain organizational duties.",
+  "Administrators control retention, telemetry and MCP configuration.",
+];
+---
+
+<BaseLayout title="Data privacy | Obrenna">
+  <div class="public-page">
+    <PublicHeader />
+    <main>
+      <PageHero
+        eyebrow="DATA PRIVACY"
+        title={`A privacy promise you can <span>draw as a boundary.</span>`}
+        body="Obrenna keeps its cloud responsibilities intentionally narrow. The private data plane—where real work happens—runs in your organization's environment."
+      >
+        <div class="privacy-badges">
+          <span><Icon name="shield-check" size={14} /> No prompt storage by default</span>
+          <span><Icon name="lock-keyhole" size={14} /> No plaintext MCP secrets</span>
+          <span><Icon name="scan-line" size={14} /> Redacted operational telemetry</span>
+        </div>
+      </PageHero>
+
+      <section class="light-section privacy-boundary">
+        <div class="container">
+          <div class="section-heading split-heading">
+            <div><Eyebrow>DATA RESPONSIBILITY</Eyebrow><h2>What goes where.</h2></div>
+            <p>Configuration and operational metadata travel through the control plane. Sensitive work stays within the infrastructure your organization manages.</p>
+          </div>
+          <div class="data-columns">
+            <article class="cloud-data">
+              <div class="data-title"><Icon name="cloud-cog" /><span><b>Obrenna cloud</b><small>Identity & control metadata</small></span></div>
+              <ul>{cloudData.map((x) => <li><Icon name="check" size={14} />{x}</li>)}</ul>
+            </article>
+            <div class="data-divider"><Icon name="shield-check" /><span>Boundary enforced by architecture and policy</span></div>
+            <article class="local-data">
+              <div class="data-title"><Icon name="lock-keyhole" /><span><b>Organization infrastructure</b><small>Private data plane</small></span></div>
+              <ul>{localData.map((x) => <li><Icon name="check" size={14} />{x}</li>)}</ul>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="dark-section transmission-section">
+        <div class="container">
+          <div class="section-heading centered"><Eyebrow>NETWORK TRANSPARENCY</Eyebrow><h2>Know what is transmitted—and what is not.</h2></div>
+          <div class="transmission-grid">
+            <article>
+              <span class="transmit-icon yes"><Icon name="arrow-right" /></span>
+              <h3>Sent to the control plane</h3>
+              <p>Authentication, membership operations, signed configuration sync, device heartbeats, health metadata and optional diagnostics.</p>
+            </article>
+            <article>
+              <span class="transmit-icon no"><Icon name="x" /></span>
+              <h3>Not sent by default</h3>
+              <p>Prompts, chat content, documents, model outputs, MCP tool arguments, tool results, private API keys or data-store responses.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="light-section limitation-section">
+        <div class="container limitation-grid">
+          <div>
+            <Eyebrow>SECURITY IS SHARED WORK</Eyebrow>
+            <h2>Clear limits. No absolute claims.</h2>
+            <p>Private AI can only be as secure as the systems it runs on. Obrenna provides controls; your organization remains responsible for its environment.</p>
+          </div>
+          <div class="limitation-list">
+            {limitations.map((x) => <div><Icon name="alert-triangle" size={16} />{x}</div>)}
+          </div>
+        </div>
+      </section>
+    </main>
+    <PublicFooter />
+  </div>
+</BaseLayout>

@@ -1,0 +1,97 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PublicHeader from "../components/PublicHeader.astro";
+import PublicFooter from "../components/PublicFooter.astro";
+import PageHero from "../components/PageHero.astro";
+import Eyebrow from "../components/Eyebrow.astro";
+import IconBox from "../components/IconBox.astro";
+import Icon from "../components/Icon.astro";
+import DownloadDesktop from "../components/islands/DownloadDesktop";
+import CopyCodeButton from "../components/islands/CopyCodeButton";
+import { routes } from "../lib/routes";
+import { getLatestDesktopRelease, getAgentInstallCommand } from "../lib/api/downloads";
+
+const release = await getLatestDesktopRelease();
+const agentInstallCommand = getAgentInstallCommand();
+
+const flowSteps: Array<[string, string]> = [
+  ["download", "Download"],
+  ["package-check", "Install"],
+  ["laptop", "Launch"],
+  ["fingerprint", "Sign in"],
+  ["link-2", "Connect"],
+];
+---
+
+<BaseLayout title="Download | Obrenna">
+  <div class="public-page">
+    <PublicHeader />
+    <main>
+      <PageHero
+        eyebrow="DOWNLOAD OBRENNA"
+        title={`Private AI access.<br /><span>Ready for your team.</span>`}
+        body="Choose the employee desktop app or deploy the organization agent to the private machine that runs your models and MCP services."
+      />
+
+      <section class="download-section">
+        <div class="container">
+          <div class="download-grid">
+            <article class="download-card primary-download">
+              <div class="download-card-head"><IconBox icon="laptop" /><span>FOR EMPLOYEES</span></div>
+              <h2>Obrenna Desktop</h2>
+              <p>Sign in, join your organization and connect to approved private AI—without configuring runtimes, URLs or credentials.</p>
+              <DownloadDesktop release={release} client:load />
+              <div class="download-meta">
+                <span><Icon name="badge-check" size={14} /> Digitally signed</span>
+                <span><Icon name="package-check" size={14} /> SHA-256 checksum</span>
+                <span><Icon name="refresh-ccw" size={14} /> Managed upgrades</span>
+              </div>
+            </article>
+            <article class="download-card">
+              <div class="download-card-head"><IconBox icon="server" /><span>FOR IT ADMINISTRATORS</span></div>
+              <h2>Organization Agent</h2>
+              <p>Enroll a trusted private machine, synchronize approved configuration and report bounded health metadata.</p>
+              <div class="code-line">
+                <code>{agentInstallCommand}</code>
+                <CopyCodeButton text={agentInstallCommand} client:load />
+              </div>
+              <a class="button button-dark full-button" href={routes.docs}><Icon name="terminal" size={16} /> View install guide</a>
+              <div class="download-meta vertical">
+                <span><Icon name="check" size={14} /> Linux x64 and ARM64</span>
+                <span><Icon name="check" size={14} /> Offline package available</span>
+                <span><Icon name="check" size={14} /> One-time enrollment flow</span>
+              </div>
+            </article>
+          </div>
+
+          <div class="install-flow">
+            <div class="flow-header">
+              <div><Eyebrow>EMPLOYEE SETUP</Eyebrow><h2>Five minutes. No infrastructure knowledge.</h2></div>
+              <a href={routes.docs}>Installation guide <Icon name="arrow-right" size={14} /></a>
+            </div>
+            <div class="flow-steps">
+              {
+                flowSteps.map(([icon, label], i) => (
+                  <div>
+                    <span>{i + 1}</span>
+                    <Icon name={icon} size={20} />
+                    <b>{label}</b>
+                    {i < 4 && <Icon name="arrow-right" class="flow-arrow" size={16} />}
+                  </div>
+                ))
+              }
+            </div>
+          </div>
+
+          <div class="release-panel">
+            <div><Icon name="file-clock" size={18} /><span><b>Release notes</b><small>What changed in Obrenna Desktop {release.version}</small></span></div>
+            <div><strong>Improved private-node reconnect</strong><p>Faster recovery when a device returns to the organization network.</p></div>
+            <div><strong>Tool approval clarity</strong><p>Confirmation prompts now show the server, risk level and policy source.</p></div>
+            <a href={routes.docs}>View all notes <Icon name="arrow-right" size={14} /></a>
+          </div>
+        </div>
+      </section>
+    </main>
+    <PublicFooter />
+  </div>
+</BaseLayout>

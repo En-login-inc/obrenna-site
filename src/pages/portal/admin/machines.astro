@@ -1,0 +1,67 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import AdminShell from "../../../components/AdminShell.astro";
+import Icon from "../../../components/Icon.astro";
+import Status from "../../../components/Status.astro";
+import { routes } from "../../../lib/routes";
+import { listMachines, getMachineSummary } from "../../../lib/api/machines";
+
+const machines = await listMachines();
+const summary = await getMachineSummary();
+---
+
+<BaseLayout title="Organization machines | Obrenna">
+  <AdminShell title="Organization machines" eyebrow="INFRASTRUCTURE">
+    <Fragment slot="actions">
+      <button class="secondary-button"><Icon name="monitor-down" size={15} /> Download agent</button>
+      <button class="button"><Icon name="plus" size={15} /> Enroll machine</button>
+    </Fragment>
+
+    <div class="filter-bar">
+      <div class="filter-search"><Icon name="search" size={14} /><span>Search machines</span></div>
+      <button><Icon name="sliders-horizontal" size={13} /> Environment: All <Icon name="chevron-down" size={13} /></button>
+      <button><Icon name="activity" size={13} /> Status: All <Icon name="chevron-down" size={13} /></button>
+      <span></span>
+      <button><Icon name="refresh-ccw" size={13} /> Refresh</button>
+    </div>
+
+    <div class="machine-summary">
+      <div>
+        <Status>{summary.onlineCount} ONLINE</Status>
+        <b>Production capacity healthy</b>
+        <span>{summary.combinedAcceleratorMemoryGb} GB combined accelerator memory available</span>
+      </div>
+      <div><Icon name="gauge" size={17} /><span><b>{summary.averageGpuUtilizationPct}%</b><small>Average GPU utilization</small></span></div>
+      <div><Icon name="activity" size={17} /><span><b>{summary.averageHeartbeatMs} ms</b><small>Average heartbeat latency</small></span></div>
+      <div><Icon name="refresh-ccw" size={17} /><span><b>{summary.appliedConfigVersion}</b><small>Applied configuration</small></span></div>
+    </div>
+
+    <div class="machine-table portal-card">
+      <div class="table-head">
+        <span>Machine</span><span>Environment</span><span>Hardware</span><span>Services</span><span>Last heartbeat</span><span>Status</span><span></span>
+      </div>
+      {
+        machines.map((m) => (
+          <div class="table-row machine-row">
+            <span class="machine-name">
+              <span class={`machine-icon ${m.tone}`}><Icon name="server" size={16} /></span>
+              <span><b>{m.name}</b><small>{m.os}</small></span>
+            </span>
+            <span><em class={`env-${m.environment.toLowerCase()}`}>{m.environment}</em></span>
+            <span>{m.hardware}</span>
+            <span>{m.services}</span>
+            <span>{m.lastHeartbeat}</span>
+            <span><Status tone={m.tone}>{m.status}</Status></span>
+            <span><Icon name="more-horizontal" size={16} /></span>
+          </div>
+        ))
+      }
+    </div>
+
+    <div class="enrollment-note">
+      <Icon name="shield-check" size={18} />
+      <span><b>Machine secrets are never displayed in the portal.</b><small>Enrollment uses one-time codes that expire after 15 minutes. Revoke a machine to invalidate its identity.</small></span>
+      <a href={routes.docs}>Enrollment guide <Icon name="arrow-right" size={13} /></a>
+    </div>
+  </AdminShell>
+</BaseLayout>

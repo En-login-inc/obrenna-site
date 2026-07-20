@@ -1,0 +1,14 @@
+---
+import Icon from "./Icon.astro";
+
+interface Props {
+  icon: string;
+  tone?: "good" | "warn" | "bad" | "neutral" | "teal";
+}
+
+const { icon, tone = "teal" } = Astro.props;
+---
+
+<span class={`icon-box icon-${tone}`}>
+  <Icon name={icon} size={19} strokeWidth={1.8} />
+</span>

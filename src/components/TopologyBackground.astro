@@ -1,0 +1,27 @@
+---
+interface Props {
+  /** Grid + a single soft glow only — no beams or floating nodes, for leaner hero surfaces. */
+  subtle?: boolean;
+}
+
+const { subtle = false } = Astro.props;
+---
+
+<div class={`topology ${subtle ? "topology-subtle" : ""}`} aria-hidden="true">
+  <div class="topology-glow glow-a"></div>
+  <div class="topology-grid"></div>
+  {
+    !subtle && (
+      <>
+        <div class="topology-glow glow-b" />
+        <div class="beam beam-a" />
+        <div class="beam beam-b" />
+        <span class="topology-node node-a" />
+        <span class="topology-node node-b" />
+        <span class="topology-node node-c" />
+        <span class="topology-node node-d" />
+        <span class="topology-node node-e" />
+      </>
+    )
+  }
+</div>

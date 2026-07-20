@@ -1,0 +1,103 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PublicHeader from "../components/PublicHeader.astro";
+import PublicFooter from "../components/PublicFooter.astro";
+import TopologyBackground from "../components/TopologyBackground.astro";
+import ProductVisual from "../components/ProductVisual.astro";
+import Eyebrow from "../components/Eyebrow.astro";
+import IconBox from "../components/IconBox.astro";
+import Icon from "../components/Icon.astro";
+import { routes } from "../lib/routes";
+---
+
+<BaseLayout>
+  <div class="public-page">
+    <PublicHeader />
+    <main>
+      <section class="hero">
+        <TopologyBackground subtle />
+        <div class="container hero-inner">
+            <h1>Put private AI<br />to work.</h1>
+          <p class="hero-sub">For your organization. On your infrastructure.</p>
+          <div class="hero-actions centered-actions">
+            <a class="button" href={routes.download}><Icon name="download" size={16} /> Download Obrenna</a>
+            <a class="button button-ghost" href={routes.contact}>Talk to sales <Icon name="arrow-right" size={16} /></a>
+          </div>
+        </div>
+        <div class="container">
+          <ProductVisual />
+        </div>
+        <div class="container hero-features">
+          <div><Icon name="check" size={18} /><div><strong>Private by default</strong><small>No prompt or output storage by default</small></div></div>
+          <div><Icon name="square" size={18} /><div><strong>Runs where you work</strong><small>Use hardware and runtimes you control</small></div></div>
+          <div><Icon name="circle-dot" size={18} /><div><strong>Ready for every employee</strong><small>One governed desktop experience</small></div></div>
+        </div>
+      </section>
+
+      <section class="light-section operating-section">
+        <div class="container">
+          <div class="section-heading split-heading">
+            <div><Eyebrow>THE OPERATING MODEL</Eyebrow><h2>One experience.<br />A clear boundary.</h2></div>
+            <p>Obrenna keeps the parts that govern access intentionally separate from the parts that process your organization's work.</p>
+          </div>
+          <div class="operating-diagram">
+            <div class="operating-card control-card">
+              <span>OBRENNA</span>
+              <h3>Control plane</h3>
+              <p>Identity, membership, approved policy and bounded service health.</p>
+              <div class="tag-row"><b>Identity</b><b>Policy</b><b>Audit</b></div>
+            </div>
+            <div class="operating-link">
+              <span>Approved configuration</span>
+              <i></i>
+              <span>Health metadata only</span>
+            </div>
+            <div class="operating-card data-card">
+              <span>YOUR ORGANIZATION</span>
+              <h3>Private data plane</h3>
+              <p>Models, files, prompts, MCP tools and their results stay where your team operates them.</p>
+              <div class="tag-row"><b>Models</b><b>Tools</b><b>Data</b></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="dark-section designed-section">
+        <div class="container">
+          <div class="section-heading centered"><Eyebrow>DESIGNED TO ADOPT</Eyebrow><h2>Private AI without the private-AI friction.</h2><p>Give every role the right level of control without turning everyone into an infrastructure expert.</p></div>
+          <div class="persona-grid">
+            <article>
+              <IconBox icon="shield" />
+              <h3>For IT</h3>
+              <p>Connect trusted infrastructure, set policies, and understand health without inspecting private work.</p>
+              <a href={routes.features}>Explore platform <Icon name="arrow-right" size={13} /></a>
+            </article>
+            <article>
+              <IconBox icon="command" />
+              <h3>For builders</h3>
+              <p>Bring in internal models and MCP tools with explicit review and approval points.</p>
+              <a href={routes.docs}>Read documentation <Icon name="arrow-right" size={13} /></a>
+            </article>
+            <article>
+              <IconBox icon="laptop" />
+              <h3>For employees</h3>
+              <p>Download, sign in, and start using your organization's approved AI workspace.</p>
+              <a href={routes.download}>Get the desktop app <Icon name="arrow-right" size={13} /></a>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="cta-section cta-teal">
+        <div class="container cta-inner">
+          <div><Eyebrow>BUILD ON YOUR TERMS</Eyebrow><h2>Useful AI that stays within your organization's control.</h2></div>
+          <div>
+            <a class="button button-dark" href={routes.contact}>Start a conversation <Icon name="arrow-right" /></a>
+            <a class="text-link-dark" href={routes.docs}>Explore documentation <Icon name="arrow-right" size={15} /></a>
+          </div>
+        </div>
+      </section>
+    </main>
+    <PublicFooter />
+  </div>
+</BaseLayout>

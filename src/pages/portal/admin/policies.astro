@@ -1,0 +1,45 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import AdminShell from "../../../components/AdminShell.astro";
+import Icon from "../../../components/Icon.astro";
+import PolicyToolTable from "../../../components/islands/PolicyToolTable";
+import { listToolPolicies, getPolicySummary } from "../../../lib/api/policies";
+
+const tools = await listToolPolicies();
+const summary = await getPolicySummary();
+---
+
+<BaseLayout title="Tool policies | Obrenna">
+  <AdminShell title="Tool policies" eyebrow="PERMISSION GOVERNANCE">
+    <Fragment slot="actions">
+      <button class="secondary-button"><Icon name="file-check-2" size={15} /> Export policy</button>
+      <button class="button"><Icon name="plus" size={15} /> Create policy</button>
+    </Fragment>
+
+    <div class="policy-summary">
+      <div><Icon name="shield-check" size={19} /><span><b>{summary.approvedToolCount} approved tools</b><small>New and changed tools are disabled by default.</small></span></div>
+      <div><b>{summary.readCount}</b><span>Read</span></div>
+      <div><b>{summary.networkCount}</b><span>Network</span></div>
+      <div><b>{summary.writeCount}</b><span>Write</span></div>
+      <div class="destructive"><b>{summary.destructiveCount}</b><span>Destructive</span></div>
+    </div>
+
+    <div class="policy-toolbar">
+      <div class="filter-search"><Icon name="search" size={14} /><span>Search tools</span></div>
+      <button><Icon name="sliders-horizontal" size={13} /> Risk: All <Icon name="chevron-down" size={13} /></button>
+      <button>Server: All <Icon name="chevron-down" size={13} /></button>
+      <button>Approval: All <Icon name="chevron-down" size={13} /></button>
+    </div>
+
+    <PolicyToolTable tools={tools} client:load />
+
+    <div class="policy-explainer">
+      <Icon name="shield" size={18} />
+      <div>
+        <b>Policy is applied on the organization machine</b>
+        <p>The control plane publishes a signed configuration. The local agent rejects stale revisions, invalid signatures and unapproved schema changes.</p>
+      </div>
+      <span>APPLIED REVISION<b>{summary.appliedRevision}</b></span>
+    </div>
+  </AdminShell>
+</BaseLayout>

@@ -1,0 +1,101 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import AdminShell from "../../../components/AdminShell.astro";
+import Icon from "../../../components/Icon.astro";
+import IconBox from "../../../components/IconBox.astro";
+import Status from "../../../components/Status.astro";
+import { routes } from "../../../lib/routes";
+import { getOverviewMetrics, getRecentActivity, getServiceHealth, getSetupProgress } from "../../../lib/api/overview";
+import { listMachines } from "../../../lib/api/machines";
+import type { StatusTone } from "../../../lib/api/machines";
+
+const metrics = await getOverviewMetrics();
+const activity = await getRecentActivity();
+const serviceHealth = await getServiceHealth();
+const setupProgress = await getSetupProgress();
+const machines = await listMachines();
+
+const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }).toUpperCase();
+---
+
+<BaseLayout title="Organization overview | Obrenna">
+  <AdminShell title="Organization overview" eyebrow={today}>
+    <div class="overview-banner">
+      <div><Icon name="shield-check" /><span><b>Your private AI service is healthy</b><small>All production policies are applied · config v42</small></span></div>
+      <Status>Operational</Status>
+    </div>
+
+    <div class="metric-grid">
+      {
+        metrics.map((m) => (
+          <article class="metric-card">
+            <div class="metric-top"><IconBox icon={m.icon} /><Status tone={m.tone as StatusTone}>{m.trend}</Status></div>
+            <b>{m.value}</b>
+            <span>{m.label}</span>
+            <small>{m.sub}</small>
+          </article>
+        ))
+      }
+    </div>
+
+    <div class="overview-main-grid">
+      <article class="portal-card infrastructure-card">
+        <div class="card-header"><div><h3>Infrastructure</h3><p>Organization-owned machines</p></div><a>View all<Icon name="arrow-right" size={13} /></a></div>
+        <div class="infra-visual">
+          <div class="infra-cloud"><Icon name="cloud-cog" size={18} /><span><b>Control plane</b><small>config v42</small></span><Status>Synced</Status></div>
+          <div class="infra-path"><span></span><Icon name="shield-check" size={13} /><span></span></div>
+          {
+            machines.slice(0, 3).map((m) => (
+              <div class="infra-node">
+                <Icon name="server" size={17} />
+                <span><b>{m.name}</b><small>{m.environment} · {m.os}</small></span>
+                <em>{m.hardware.split(" · ")[0]}</em>
+                <Status tone={m.tone}>{m.status}</Status>
+              </div>
+            ))
+          }
+        </div>
+      </article>
+      <article class="portal-card activity-card">
+        <div class="card-header"><div><h3>Recent policy activity</h3><p>Redacted audit metadata</p></div><a href={routes.audit}>Open audit<Icon name="arrow-right" size={13} /></a></div>
+        <div class="activity-list">
+          {
+            activity.map((a) => (
+              <div>
+                <IconBox icon={a.icon} tone={a.tone as StatusTone} />
+                <span><b>{a.title}</b><small>{a.sub}</small></span>
+                <time>{a.time}</time>
+              </div>
+            ))
+          }
+        </div>
+      </article>
+    </div>
+
+    <div class="overview-bottom">
+      <article class="portal-card">
+        <div class="card-header"><div><h3>Service health</h3><p>Last 24 hours</p></div></div>
+        <div class="service-list">
+          {
+            serviceHealth.map((s) => (
+              <div>
+                <Icon name={s.icon} size={16} />
+                <span>{s.label}</span>
+                <div class="spark-bars">{s.sparkline.map((n) => <i style={`height:${n * 4}px`} />)}</div>
+                <b>{s.value}</b>
+              </div>
+            ))
+          }
+        </div>
+      </article>
+      <article class="portal-card setup-card-small">
+        <span>DEPLOYMENT PROGRESS</span>
+        <h3>Finish organization setup</h3>
+        <p>Invite at least two members and configure your first tool policy.</p>
+        <div><i style={`width:${(setupProgress.completedSteps / setupProgress.totalSteps) * 100}%`}></i></div>
+        <small>{setupProgress.completedSteps} of {setupProgress.totalSteps} recommended steps complete</small>
+        <button>Continue setup <Icon name="arrow-right" size={13} /></button>
+      </article>
+    </div>
+  </AdminShell>
+</BaseLayout>

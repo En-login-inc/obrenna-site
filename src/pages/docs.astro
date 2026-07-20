@@ -1,0 +1,86 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PublicHeader from "../components/PublicHeader.astro";
+import Eyebrow from "../components/Eyebrow.astro";
+import Icon from "../components/Icon.astro";
+import CopyCodeButton from "../components/islands/CopyCodeButton";
+
+const installScript = `# Current developer/setup flow
+dev.ps1
+
+# Install the local browser dependency when needed
+cd backend
+python -m playwright install chromium
+
+# Pull example local models
+ollama pull qwen3.5-9b-claude-opus-reasoning-distilled
+ollama pull granite4.0-h-micro-3b
+ollama pull qwen3.5-0.8b`;
+---
+
+<BaseLayout title="Documentation | Obrenna" pageClass="docs-page">
+  <PublicHeader />
+  <main class="docs-shell">
+    <aside class="docs-sidebar">
+      <div class="docs-search"><Icon name="search" size={14} /><span>Search documentation</span><kbd>⌘K</kbd></div>
+      <strong>GET STARTED</strong>
+      <a class="active">Overview</a>
+      <a>Architecture</a>
+      <a>Network requirements</a>
+      <strong>FOR ADMINISTRATORS</strong>
+      <a>Deploy organization agent</a>
+      <a>Configure Ollama or vLLM</a>
+      <a>Connect an MCP server</a>
+      <a>Approve tool policies</a>
+      <strong>FOR EMPLOYEES</strong>
+      <a>Install desktop</a>
+      <a>Join an organization</a>
+      <a>Troubleshooting</a>
+      <strong>REFERENCE</strong>
+      <a>Security model</a>
+      <a>Data privacy</a>
+      <a>CLI reference</a>
+    </aside>
+    <article class="docs-article">
+      <div class="docs-breadcrumb">Documentation <Icon name="chevron-right" size={12} /> Get started <Icon name="chevron-right" size={12} /> Overview</div>
+      <Eyebrow>GET STARTED</Eyebrow>
+      <h1>Run a local-first AI workspace your organization can operate.</h1>
+      <p class="docs-lead">Obrenna runs its control plane, agent runtime, registry, policies and local state on the desktop. Remote model or MCP services are optional and explicitly configured.</p>
+      <div class="docs-callout">
+        <Icon name="shield-check" size={19} />
+        <div><b>Before you begin</b><p>Use the current desktop developer setup, a local Ollama installation or another OpenAI-compatible endpoint, and any MCP servers you intend to connect. Public installer, enrollment-code and remote control-plane workflows: NA.</p></div>
+      </div>
+      <h2>Current architecture</h2>
+      <div class="docs-steps">
+        <div><b>1</b><span><strong>Tauri desktop shell</strong><p>Owns local process lifecycle, permissions and the desktop UI.</p></span><a>Implemented</a></div>
+        <div><b>2</b><span><strong>FastAPI backend</strong><p>Handles orchestration, MCP registry and routing, policies, confirmations and local APIs.</p></span><a>Implemented</a></div>
+        <div><b>3</b><span><strong>Local state and runtime</strong><p>SQLite, local files, memory and JSONL telemetry remain on the machine by default.</p></span><a>Implemented</a></div>
+        <div><b>4</b><span><strong>Optional remote services</strong><p>Prompts, responses, tool arguments and results leave the machine only for explicitly configured remote endpoints.</p></span><a>Available</a></div>
+      </div>
+      <div class="docs-code">
+        <div>
+          <span>Current local setup examples</span>
+          <CopyCodeButton text={installScript} label="Copy" client:load />
+        </div>
+        <pre><code>{installScript}</code></pre>
+      </div>
+      <div class="docs-next">
+        <span>Next</span>
+        <a>Understand the local control plane and data boundary <Icon name="arrow-right" size={14} /></a>
+      </div>
+    </article>
+    <aside class="docs-toc">
+      <strong>ON THIS PAGE</strong>
+      <a>Current architecture</a>
+      <a>Local setup</a>
+      <a>Connect a runtime</a>
+      <a>Remote endpoint boundary</a>
+      <div>
+        <Icon name="circle-help" size={16} />
+        <b>Need help?</b>
+        <p>Public installer, enrollment and support workflows: NA.</p>
+        <a>Troubleshooting is local-only</a>
+      </div>
+    </aside>
+  </main>
+</BaseLayout>

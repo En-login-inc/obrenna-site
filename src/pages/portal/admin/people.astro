@@ -1,0 +1,58 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import AdminShell from "../../../components/AdminShell.astro";
+import Icon from "../../../components/Icon.astro";
+import Status from "../../../components/Status.astro";
+import { listPeople, listRoleSummaries } from "../../../lib/api/people";
+
+const people = await listPeople();
+const roles = await listRoleSummaries();
+const roleIcon: Record<string, string> = { Owner: "user-check", Admin: "shield-check", Member: "users", Auditor: "file-check-2" };
+---
+
+<BaseLayout title="People & access | Obrenna">
+  <AdminShell title="People & access" eyebrow="ORGANIZATION MEMBERSHIP">
+    <Fragment slot="actions">
+      <button class="button"><Icon name="user-plus" size={15} /> Invite people</button>
+    </Fragment>
+
+    <div class="people-tabs">
+      <button class="active">Members <span>{people.length}</span></button>
+      <button>Pending invitations <span>3</span></button>
+      <button>Roles & permissions</button>
+      <span></span>
+      <button><Icon name="sliders-horizontal" size={13} /> Filter</button>
+    </div>
+
+    <div class="people-table portal-card">
+      <div class="table-head">
+        <span>Person</span><span>Role</span><span>Organization access</span><span>Last activity</span><span>Device status</span><span>Account</span><span></span>
+      </div>
+      {
+        people.map((p) => (
+          <div class="table-row people-row">
+            <span class="person"><i>{p.initials}</i><span><b>{p.name}</b><small>{p.email}</small></span></span>
+            <span><em class={`role-${p.role.toLowerCase()}`}>{p.role}</em></span>
+            <span>{p.access}</span>
+            <span>{p.lastActivity}</span>
+            <span>{p.deviceStatus}</span>
+            <span><Status tone={p.accountStatus === "Suspended" ? "neutral" : "good"}>{p.accountStatus}</Status></span>
+            <span><Icon name="more-horizontal" size={16} /></span>
+          </div>
+        ))
+      }
+    </div>
+
+    <div class="role-cards">
+      {
+        roles.map((r) => (
+          <article>
+            <Icon name={roleIcon[r.role]} size={20} />
+            <span><b>{r.role}</b><small>{r.description}</small></span>
+            <strong>{r.memberCount} members</strong>
+          </article>
+        ))
+      }
+    </div>
+  </AdminShell>
+</BaseLayout>

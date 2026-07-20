@@ -1,0 +1,35 @@
+---
+/**
+ * Root layout for the Obrenna site. The visual system (dark marketing
+ * shell, light portal/admin surfaces) is fixed by brand, not by viewer
+ * theme preference, so unlike the previous placeholder this layout does
+ * not toggle a data-theme attribute — each page's own classes decide.
+ */
+import "../styles/global.css";
+
+interface Props {
+  title?: string;
+  description?: string;
+  pageClass?: string;
+}
+
+const {
+  title = "Obrenna | Organization-owned AI",
+  description = "The managed identity and policy layer for organization-owned private AI infrastructure.",
+  pageClass = "",
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/png" href="/brand/mono-dark.png" />
+    <title>{title}</title>
+  </head>
+  <body class={pageClass}>
+    <slot />
+  </body>
+</html>

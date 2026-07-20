@@ -1,0 +1,18 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import OnboardingShell from "../../components/OnboardingShell.astro";
+import CreateOrganizationForm from "../../components/islands/CreateOrganizationForm";
+---
+
+<BaseLayout title="Create your organization | Obrenna">
+  <OnboardingShell>
+    <section class="onboarding-content">
+      <div class="onboarding-title">
+        <span>STEP 1 OF 4</span>
+        <h1>Create your organization</h1>
+        <p>This becomes the secure home for your members, private machines, models and tool policies.</p>
+      </div>
+      <CreateOrganizationForm client:load />
+    </section>
+  </OnboardingShell>
+</BaseLayout>

@@ -1,0 +1,32 @@
+---
+import Icon from "./Icon.astro";
+import Status from "./Status.astro";
+---
+
+<div class="product-visual">
+  <div class="product-visual-bar">
+    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    <span class="product-visual-title">Obrenna</span>
+    <span class="product-visual-tag">PRIVATE WORKSPACE</span>
+    <Status tone="teal">Local</Status>
+  </div>
+  <div class="product-visual-body">
+    <div class="product-visual-callout">
+      <Icon name="check" size={14} />
+      <span><strong>Policy synced</strong><small>Trusted configuration</small></span>
+    </div>
+    <div class="product-visual-mark">
+      <img src="/brand/Obrenna_Icon_Clean.png" alt="Obrenna" />
+    </div>
+    <div class="product-visual-copy">
+      <span>READY FOR YOUR ORGANIZATION</span>
+      <strong>Private AI, connected.</strong>
+      <p>Your models, tools and company context stay inside your environment.</p>
+    </div>
+    <div class="product-visual-line"></div>
+    <div class="product-visual-footer">
+      <div><Icon name="shield-check" size={15} /><span><strong>Private runtime</strong><small>Organization-owned</small></span></div>
+      <div><Icon name="check" size={15} /><span><strong>Policy applied</strong><small>Desktop ready</small></span></div>
+    </div>
+  </div>
+</div>

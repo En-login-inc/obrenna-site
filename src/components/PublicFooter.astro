@@ -1,0 +1,32 @@
+---
+import Logo from "./Logo.astro";
+import { routes } from "../lib/routes";
+---
+
+<footer class="footer">
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <Logo />
+      <p>Organization-owned AI, made operable.</p>
+      <span>© 2026 Obrenna, an En Login product.</span>
+    </div>
+    <div>
+      <strong>Product</strong>
+      <a href={routes.features}>Platform</a>
+      <a href={routes.download}>Downloads</a>
+      <a href={routes.privacy}>Data privacy</a>
+    </div>
+    <div>
+      <strong>Resources</strong>
+      <a href={routes.docs}>Documentation</a>
+      <a href={routes.docs}>Deployment guide</a>
+      <a href={routes.docs}>System status</a>
+    </div>
+    <div>
+      <strong>Company</strong>
+      <a href={routes.why}>Why Obrenna</a>
+      <a href={routes.contact}>Contact sales</a>
+      <a href={routes.signin}>Customer sign in</a>
+    </div>
+  </div>
+</footer>

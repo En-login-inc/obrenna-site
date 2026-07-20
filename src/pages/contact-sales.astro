@@ -1,0 +1,33 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PublicHeader from "../components/PublicHeader.astro";
+import PublicFooter from "../components/PublicFooter.astro";
+import TopologyBackground from "../components/TopologyBackground.astro";
+import Eyebrow from "../components/Eyebrow.astro";
+import Icon from "../components/Icon.astro";
+import ContactForm from "../components/islands/ContactForm";
+---
+
+<BaseLayout title="Contact sales | Obrenna">
+  <div class="public-page">
+    <PublicHeader />
+    <main class="contact-page">
+      <TopologyBackground />
+      <div class="container contact-grid">
+        <div class="contact-copy">
+          <Eyebrow>TALK TO OBRENNA</Eyebrow>
+          <h1>Design a private AI deployment that fits your organization.</h1>
+          <p>We'll discuss your infrastructure, identity requirements, model runtime, internal systems and rollout plan.</p>
+          <div class="contact-points">
+            <div><Icon name="shield-check" /><span><b>Architecture review</b><small>Control-plane and data-plane boundaries</small></span></div>
+            <div><Icon name="network" /><span><b>Integration planning</b><small>Models, MCP servers, network and identity</small></span></div>
+            <div><Icon name="users" /><span><b>Rollout design</b><small>Roles, policies, pilots and employee onboarding</small></span></div>
+          </div>
+          <blockquote>"The conversation is about your operating requirements—not forcing your infrastructure into a generic cloud product."</blockquote>
+        </div>
+        <ContactForm client:load />
+      </div>
+    </main>
+    <PublicFooter />
+  </div>
+</BaseLayout>

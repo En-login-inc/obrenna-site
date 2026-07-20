@@ -1,0 +1,72 @@
+---
+import Logo from "./Logo.astro";
+import Icon from "./Icon.astro";
+import Status from "./Status.astro";
+import { adminNav, routes } from "../lib/routes";
+
+interface Props {
+  title: string;
+  eyebrow: string;
+}
+
+const { title, eyebrow } = Astro.props;
+const path = Astro.url.pathname;
+---
+
+<div class="portal-page">
+  <aside class="portal-sidebar">
+    <div class="portal-logo"><Logo /></div>
+    <button class="org-switcher">
+      <span class="org-avatar">NL</span>
+      <span><b>Northstar Labs</b><small>Production</small></span>
+      <Icon name="chevron-down" size={14} />
+    </button>
+    <nav>
+      <span>CONTROL PLANE</span>
+      {
+        adminNav.map(([label, href, icon]) => (
+          <a href={href} class={path === href ? "active" : ""}>
+            <Icon name={icon} size={16} />
+            {label}
+            {label === "MCP servers" && <i>1</i>}
+          </a>
+        ))
+      }
+      <span>ORGANIZATION</span>
+      <a href={routes.settings} class={path === routes.settings ? "active" : ""}>
+        <Icon name="settings" size={16} />Settings
+      </a>
+      <a href={routes.docs}>
+        <Icon name="book-open" size={16} />Documentation<Icon name="external-link" size={12} />
+      </a>
+    </nav>
+    <div class="sidebar-health">
+      <div><Icon name="activity" size={16} /><span><b>Organization health</b><small>All critical systems online</small></span></div>
+      <div class="health-bar"><span></span></div>
+      <a href={routes.machines}>View infrastructure <Icon name="arrow-right" size={12} /></a>
+    </div>
+    <div class="sidebar-user">
+      <span>DJ</span>
+      <div><b>Darian J.</b><small>Organization owner</small></div>
+      <Icon name="more-horizontal" size={15} />
+    </div>
+  </aside>
+  <main class="portal-main">
+    <header class="portal-topbar">
+      <div class="portal-breadcrumb"><span>Northstar Labs</span><Icon name="chevron-right" size={13} /><b>{title}</b></div>
+      <div class="topbar-actions">
+        <button><Icon name="search" size={16} /></button>
+        <button class="notification-button"><Icon name="activity" size={16} /><span></span></button>
+        <span class="topbar-divider"></span>
+        <Status>Control plane operational</Status>
+      </div>
+    </header>
+    <section class="portal-content">
+      <div class="portal-heading">
+        <div><span>{eyebrow}</span><h1>{title}</h1></div>
+        {Astro.slots.has("actions") && <div class="portal-heading-actions"><slot name="actions" /></div>}
+      </div>
+      <slot />
+    </section>
+  </main>
+</div>

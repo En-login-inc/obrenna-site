@@ -1,0 +1,30 @@
+---
+import Logo from "./Logo.astro";
+import Icon from "./Icon.astro";
+import MobileNavToggle from "./islands/MobileNavToggle";
+import { publicNav, routes } from "../lib/routes";
+
+const path = Astro.url.pathname;
+---
+
+<header class="public-header">
+  <div class="public-header-inner">
+    <Logo />
+    <nav id="public-nav" class="public-nav">
+      {
+        publicNav.map(([label, href]) => (
+          <a href={href} class={path === href ? "active" : ""}>
+            {label}
+          </a>
+        ))
+      }
+    </nav>
+    <div class="header-actions">
+      <a class="button button-small" href={routes.download}>
+        <Icon name="download" size={14} /> Download
+      </a>
+      <a class="button button-ghost button-small" href={routes.signin}>Sign in</a>
+    </div>
+    <MobileNavToggle navId="public-nav" client:load />
+  </div>
+</header>

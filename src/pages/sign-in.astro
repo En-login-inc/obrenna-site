@@ -1,0 +1,32 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import TopologyBackground from "../components/TopologyBackground.astro";
+import Logo from "../components/Logo.astro";
+import Eyebrow from "../components/Eyebrow.astro";
+import Icon from "../components/Icon.astro";
+import SignInForm from "../components/islands/SignInForm";
+---
+
+<BaseLayout title="Sign in | Obrenna">
+  <main class="auth-page">
+    <TopologyBackground />
+    <div class="auth-brand"><Logo /></div>
+    <div class="auth-copy">
+      <Eyebrow>ORGANIZATION-OWNED AI</Eyebrow>
+      <h1>Welcome back.</h1>
+      <p>Sign in to manage your organization or connect your desktop app.</p>
+      <div class="auth-architecture">
+        <div><Icon name="cloud-cog" /><span><b>Obrenna control plane</b><small>Identity · policy · health</small></span></div>
+        <span class="auth-line"><Icon name="lock-keyhole" size={16} /></span>
+        <div><Icon name="server" /><span><b>Your private infrastructure</b><small>Models · tools · company data</small></span></div>
+      </div>
+    </div>
+    <SignInForm client:load />
+    <div class="auth-footer">
+      <span>Privacy</span>
+      <span>Security</span>
+      <span>Documentation</span>
+      <span>© 2026 Obrenna</span>
+    </div>
+  </main>
+</BaseLayout>

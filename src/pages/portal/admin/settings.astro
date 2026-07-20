@@ -1,0 +1,39 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import AdminShell from "../../../components/AdminShell.astro";
+import Icon from "../../../components/Icon.astro";
+import PrivacyDefaultsToggles from "../../../components/islands/PrivacyDefaultsToggles";
+import { getOrganizationProfile, getPrivacyDefaults } from "../../../lib/api/settings";
+
+const profile = await getOrganizationProfile();
+const privacyDefaults = await getPrivacyDefaults();
+---
+
+<BaseLayout title="Organization settings | Obrenna">
+  <AdminShell title="Organization settings" eyebrow="CONTROL PLANE CONFIGURATION">
+    <div class="settings-layout">
+      <nav>
+        <a class="active">General</a>
+        <a>Privacy & telemetry</a>
+        <a>Retention</a>
+        <a>Authentication</a>
+        <a>Environments</a>
+        <a>Billing</a>
+        <a class="danger">Delete organization</a>
+      </nav>
+      <div class="settings-panels">
+        <article class="portal-card settings-card">
+          <div class="card-header"><div><h3>Organization profile</h3><p>Used in invitations, desktop configuration and audit exports.</p></div></div>
+          <label>Organization name<input value={profile.name} /></label>
+          <label>Organization identifier<div class="immutable-field"><input value={profile.identifier} disabled /><Icon name="lock-keyhole" size={14} /></div></label>
+          <label>Organization logo<div class="settings-logo"><span>NL</span><button>Replace logo</button><small>PNG or SVG · max 2 MB</small></div></label>
+          <div class="settings-actions"><button class="button">Save changes</button></div>
+        </article>
+        <article class="portal-card settings-card">
+          <div class="card-header"><div><h3>Default privacy configuration</h3><p>Applied to new environments unless explicitly overridden.</p></div></div>
+          <PrivacyDefaultsToggles initial={privacyDefaults} client:load />
+        </article>
+      </div>
+    </div>
+  </AdminShell>
+</BaseLayout>

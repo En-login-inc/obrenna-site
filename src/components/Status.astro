@@ -1,0 +1,13 @@
+---
+interface Props {
+  tone?: "good" | "warn" | "bad" | "neutral" | "teal";
+  class?: string;
+}
+
+const { tone = "good", class: className = "" } = Astro.props;
+---
+
+<span class={`status status-${tone} ${className}`}>
+  <span class="status-dot"></span>
+  <slot />
+</span>

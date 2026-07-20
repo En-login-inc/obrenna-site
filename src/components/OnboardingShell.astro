@@ -1,0 +1,59 @@
+---
+import Logo from "./Logo.astro";
+import Icon from "./Icon.astro";
+import { routes } from "../lib/routes";
+
+interface Props {
+  invite?: boolean;
+}
+
+const { invite = false } = Astro.props;
+
+const createOrgSteps: Array<[string, string]> = [
+  ["check-circle-2", "Organization"],
+  ["sliders-horizontal", "Privacy defaults"],
+  ["server", "Private machine"],
+  ["users", "Invite team"],
+];
+
+const inviteSteps: Array<[string, string]> = [
+  ["check-circle-2", "Invitation"],
+  ["user-check", "Your account"],
+  ["laptop", "Desktop app"],
+];
+
+const steps = invite ? inviteSteps : createOrgSteps;
+---
+
+<main class="onboarding-page">
+  <header class="onboarding-header">
+    <Logo light />
+    <span>Secure organization setup</span>
+    <div class="user-chip">
+      <span>DJ</span>
+      <div><b>Darian J.</b><small>darian@northstar.ai</small></div>
+      <Icon name="chevron-down" size={16} />
+    </div>
+  </header>
+  <div class="onboarding-body">
+    <aside class="onboarding-progress">
+      <span>SETUP PROGRESS</span>
+      {
+        steps.map(([icon, label], i) => (
+          <div class={i === 0 ? "active" : ""}>
+            <b>{i + 1}</b>
+            <Icon name={icon} size={16} />
+            <span>{label}</span>
+          </div>
+        ))
+      }
+      <div class="setup-help">
+        <Icon name="circle-help" size={16} />
+        <b>Need help?</b>
+        <p>Setup is safe to pause. Your progress is saved.</p>
+        <a href={routes.docs}>Read the guide</a>
+      </div>
+    </aside>
+    <slot />
+  </div>
+</main>

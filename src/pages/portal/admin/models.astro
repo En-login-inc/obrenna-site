@@ -1,0 +1,61 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import AdminShell from "../../../components/AdminShell.astro";
+import Icon from "../../../components/Icon.astro";
+import Status from "../../../components/Status.astro";
+import { listModelEndpoints, getModelCapacity } from "../../../lib/api/models";
+
+const endpoints = await listModelEndpoints();
+const capacity = await getModelCapacity();
+---
+
+<BaseLayout title="Model endpoints | Obrenna">
+  <AdminShell title="Model endpoints" eyebrow="PRIVATE INFERENCE">
+    <Fragment slot="actions">
+      <button class="button"><Icon name="plus" size={15} /> Register endpoint</button>
+    </Fragment>
+
+    <div class="model-capacity">
+      <div>
+        <Icon name="brain-circuit" size={20} />
+        <span><b>{capacity.healthyEndpointCount} healthy endpoints across {capacity.machineCount} machines</b><small>All employee-facing model roles have production redundancy.</small></span>
+      </div>
+      <div><span>Current requests</span><b>{capacity.currentRequests}</b></div>
+      <div><span>Available capacity</span><b>{capacity.availableCapacityPct}%</b></div>
+      <Status>Healthy</Status>
+    </div>
+
+    <div class="model-grid">
+      {
+        endpoints.map((e) => (
+          <article class="portal-card model-card">
+            <div class="model-card-top">
+              <div class="icon-box icon-teal"><Icon name="brain-circuit" size={19} strokeWidth={1.8} /></div>
+              <Status tone={e.tone}>{e.tone === "warn" ? "Testing" : "Available"}</Status>
+              <Icon name="more-horizontal" size={16} />
+            </div>
+            <span>{e.environment.toUpperCase()} ENDPOINT</span>
+            <h3>{e.title}</h3>
+            <p>{e.model}</p>
+            <dl>
+              <div><dt>Runtime</dt><dd>{e.runtime}</dd></div>
+              <div><dt>Role</dt><dd>{e.role}</dd></div>
+              <div><dt>Context</dt><dd>{e.contextWindow}</dd></div>
+              <div><dt>Machine</dt><dd>{e.machine}</dd></div>
+            </dl>
+            <div class="model-card-foot">
+              <span><Icon name="activity" size={12} /> Checked {e.lastCheckedAgo} ago</span>
+              <button>View endpoint <Icon name="chevron-right" size={13} /></button>
+            </div>
+          </article>
+        ))
+      }
+    </div>
+
+    <div class="capacity-warning">
+      <Icon name="gauge" size={18} />
+      <span><b>Capacity planning</b><small>Peak utilization reached {capacity.peakUtilizationPct}% this week. Production headroom remains within the policy target of {capacity.policyHeadroomTargetPct}%.</small></span>
+      <button>View utilization</button>
+    </div>
+  </AdminShell>
+</BaseLayout>

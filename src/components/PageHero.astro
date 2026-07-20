@@ -1,0 +1,22 @@
+---
+import TopologyBackground from "./TopologyBackground.astro";
+import Eyebrow from "./Eyebrow.astro";
+
+interface Props {
+  eyebrow: string;
+  title: string;
+  body: string;
+}
+
+const { eyebrow, title, body } = Astro.props;
+---
+
+<section class="sub-hero">
+  <TopologyBackground />
+  <div class="container sub-hero-inner">
+    <Eyebrow>{eyebrow}</Eyebrow>
+    <h1 set:html={title} />
+    <p>{body}</p>
+    <slot />
+  </div>
+</section>

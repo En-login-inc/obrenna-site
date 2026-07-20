@@ -1,0 +1,13 @@
+---
+interface Props {
+  /** Use dark wordmark text for light-background contexts (onboarding header, light table cells). */
+  light?: boolean;
+}
+
+const { light = false } = Astro.props;
+---
+
+<a href="/" class={`logo ${light ? "logo-on-light" : ""}`} aria-label="Obrenna home">
+  <img src="/brand/Obrenna_Icon_Clean.png" alt="" class="logo-mark-img" />
+  <span class="logo-word">Obrenna</span>
+</a>

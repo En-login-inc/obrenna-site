@@ -1,0 +1,40 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import OnboardingShell from "../../components/OnboardingShell.astro";
+import Icon from "../../components/Icon.astro";
+import InvitationActions from "../../components/islands/InvitationActions";
+import { getInvitation } from "../../lib/api/organization";
+
+const token = Astro.url.searchParams.get("token") ?? "";
+const invitation = await getInvitation(token);
+---
+
+<BaseLayout title="You're invited | Obrenna">
+  <OnboardingShell invite>
+    <section class="onboarding-content invite-content">
+      {
+        invitation && (
+          <div class="invite-card">
+            <div class="invite-logo">{invitation.organizationInitials}</div>
+            <span>YOU'VE BEEN INVITED TO</span>
+            <h1>{invitation.organizationName}</h1>
+            <p>{invitation.invitedByName} invited you to join {invitation.organizationName} in Obrenna.</p>
+            <dl>
+              <div><dt>Your role</dt><dd><Icon name="user-check" size={13} /> {invitation.role}</dd></div>
+              <div><dt>Work email</dt><dd>{invitation.inviteeEmail}</dd></div>
+              <div><dt>Invitation expires</dt><dd><Icon name="clock-3" size={13} /> {new Date(invitation.expiresAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</dd></div>
+            </dl>
+            <div class="invite-permissions">
+              <strong>As a member, you can:</strong>
+              <span><Icon name="check" size={13} /> Connect Obrenna Desktop to approved organization machines</span>
+              <span><Icon name="check" size={13} /> Use models and tools assigned to your role</span>
+              <span><Icon name="check" size={13} /> Review your sessions and confirmation history</span>
+            </div>
+            <InvitationActions token={token} client:load />
+          </div>
+        )
+      }
+      <p class="invite-security"><Icon name="shield-check" size={13} /> This invitation is tied to {invitation?.inviteeEmail} and cannot be transferred.</p>
+    </section>
+  </OnboardingShell>
+</BaseLayout>

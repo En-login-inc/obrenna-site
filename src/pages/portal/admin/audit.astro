@@ -1,0 +1,54 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import AdminShell from "../../../components/AdminShell.astro";
+import Icon from "../../../components/Icon.astro";
+import Status from "../../../components/Status.astro";
+import { listAuditEvents } from "../../../lib/api/audit";
+
+const { events, totalCount } = await listAuditEvents();
+---
+
+<BaseLayout title="Audit log | Obrenna">
+  <AdminShell title="Audit log" eyebrow="REDACTED OPERATIONAL HISTORY">
+    <Fragment slot="actions">
+      <button class="secondary-button"><Icon name="download" size={15} /> Export metadata</button>
+    </Fragment>
+
+    <div class="audit-callout">
+      <Icon name="shield-check" size={18} />
+      <span><b>Sensitive tool arguments are hidden by default.</b><small>This log records policy decisions and lifecycle metadata—not prompt text, private files, tool inputs or tool results.</small></span>
+      <button>Retention: 90 days <Icon name="chevron-down" size={13} /></button>
+    </div>
+
+    <div class="audit-filters">
+      <div class="filter-search"><Icon name="search" size={14} /><span>Search events</span></div>
+      <button>User: All <Icon name="chevron-down" size={13} /></button>
+      <button>Server: All <Icon name="chevron-down" size={13} /></button>
+      <button>Decision: All <Icon name="chevron-down" size={13} /></button>
+      <button><Icon name="clock-3" size={13} /> Last 24 hours <Icon name="chevron-down" size={13} /></button>
+    </div>
+
+    <div class="audit-timeline portal-card">
+      {
+        events.map((e) => (
+          <div class="audit-row">
+            <time>{e.time}<small>{e.date}</small></time>
+            <span class={`audit-marker ${e.tone}`}><i /></span>
+            <div class="audit-event">
+              <div><Status tone={e.tone}>{e.decision}</Status><b>{e.tool}</b><span>by {e.actor}</span></div>
+              <p>{e.reason}</p>
+            </div>
+            <div class="audit-server"><span>{e.server}</span><code>{e.schemaHash}</code></div>
+            <button><Icon name="chevron-right" size={16} /></button>
+          </div>
+        ))
+      }
+    </div>
+
+    <div class="pagination">
+      <span>Showing 1–{events.length} of {totalCount.toLocaleString()} events</span>
+      <button disabled>Previous</button>
+      <button>Next</button>
+    </div>
+  </AdminShell>
+</BaseLayout>

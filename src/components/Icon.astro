@@ -1,0 +1,46 @@
+---
+/**
+ * Inlines a lucide-static icon by kebab-case name (e.g. "server",
+ * "shield-check"). Using the static SVG set (not lucide-react) keeps
+ * every icon a zero-JS static element, matching Astro's island model.
+ */
+import fs from "node:fs";
+import path from "node:path";
+
+interface Props {
+  name: string;
+  size?: number;
+  strokeWidth?: number;
+  class?: string;
+}
+
+const { name, size = 20, strokeWidth = 2, class: className = "" } = Astro.props;
+
+const svgPath = path.join(
+  process.cwd(),
+  "node_modules/lucide-static/icons",
+  `${name}.svg`
+);
+
+let inner = "";
+try {
+  const raw = fs.readFileSync(svgPath, "utf-8");
+  const match = raw.match(/<svg[^>]*>([\s\S]*)<\/svg>/);
+  inner = match ? match[1] : "";
+} catch {
+  inner = "";
+}
+---
+
+<svg
+  class={`icon icon-${name} ${className}`}
+  width={size}
+  height={size}
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width={strokeWidth}
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  set:html={inner}
+/>

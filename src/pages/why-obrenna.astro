@@ -1,0 +1,104 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PublicHeader from "../components/PublicHeader.astro";
+import PublicFooter from "../components/PublicFooter.astro";
+import PageHero from "../components/PageHero.astro";
+import Eyebrow from "../components/Eyebrow.astro";
+import Logo from "../components/Logo.astro";
+import Icon from "../components/Icon.astro";
+
+const rows = [
+  ["Prompt and output location", "Provider cloud", "Provider cloud", "Your infrastructure"],
+  ["Private MCP governance", "Limited", "Build it yourself", "Built in"],
+  ["Central employee access", "Built in", "Build it yourself", "Built in"],
+  ["Model and hardware choice", "Limited", "Full", "Full"],
+  ["Schema-change approval", "Varies", "Build it yourself", "Explicit"],
+  ["Admin audit metadata", "Provider-defined", "Build it yourself", "Organization-defined"],
+];
+
+const rolloutSteps: Array<[string, string]> = [
+  ["01", "One machine"],
+  ["02", "One organization"],
+  ["03", "Multiple employees"],
+  ["04", "Multiple MCP servers"],
+  ["05", "Enterprise identity"],
+];
+---
+
+<BaseLayout title="Why Obrenna | Obrenna">
+  <div class="public-page">
+    <PublicHeader />
+    <main>
+      <PageHero
+        eyebrow="WHY OBRENNA"
+        title={`Private AI is easy to start.<br /><span>Operating it is the hard part.</span>`}
+        body="Model hosting alone does not give an organization identity, policy, employee access, safe tool controls or a comprehensible operating model. Obrenna does."
+      />
+
+      <section class="light-section why-section">
+        <div class="container">
+          <div class="section-heading split-heading">
+            <div><Eyebrow>THE MISSING LAYER</Eyebrow><h2>Control without making employees carry the complexity.</h2></div>
+            <p>Your team should not need to understand model servers, MCP transport, credential files or schema manifests to use private AI responsibly.</p>
+          </div>
+          <div class="why-cards">
+            <article><span>FOR IT</span><h3>One place to govern</h3><p>See machines, endpoints, services, roles and decisions across the organization.</p></article>
+            <article><span>FOR ENGINEERING</span><h3>Open, compatible building blocks</h3><p>Use the model runtimes and MCP servers that fit your actual systems.</p></article>
+            <article><span>FOR EMPLOYEES</span><h3>One app that just connects</h3><p>Sign in, choose an organization and use only what has been approved.</p></article>
+          </div>
+        </div>
+      </section>
+
+      <section class="comparison-section">
+        <div class="container">
+          <div class="section-heading centered"><Eyebrow>COMPARE THE OPERATING MODELS</Eyebrow><h2>Private execution and managed governance.</h2></div>
+          <div class="comparison-table">
+            <div class="comparison-row comparison-head">
+              <span>Capability</span>
+              <span>Public AI chat</span>
+              <span>DIY self-hosting</span>
+              <span class="obrenna-col"><Logo light /></span>
+            </div>
+            {
+              rows.map((row) => (
+                <div class="comparison-row">
+                  {row.map((cell, i) => (
+                    <span class={i === 3 ? "obrenna-col" : ""}>
+                      {i === 3 && cell === "Built in" ? (
+                        <>
+                          <Icon name="check-circle-2" size={14} /> {cell}
+                        </>
+                      ) : (
+                        cell
+                      )}
+                    </span>
+                  ))}
+                </div>
+              ))
+            }
+          </div>
+          <p class="comparison-note">
+            <Icon name="alert-triangle" size={15} /> Obrenna improves organizational control and privacy; it does not make organization-managed infrastructure automatically secure. Endpoint security, network configuration, patching, backups and trusted executables remain your responsibility.
+          </p>
+        </div>
+      </section>
+
+      <section class="light-section rollout-section">
+        <div class="container">
+          <div><Eyebrow>GROW AT YOUR OWN PACE</Eyebrow><h2>Start with one node.<br />Keep the path to scale.</h2></div>
+          <div class="rollout-track">
+            {
+              rolloutSteps.map(([n, label], i) => (
+                <div class={i < 3 ? "complete" : ""}>
+                  <b>{n}</b>
+                  <span>{label}</span>
+                </div>
+              ))
+            }
+          </div>
+        </div>
+      </section>
+    </main>
+    <PublicFooter />
+  </div>
+</BaseLayout>
