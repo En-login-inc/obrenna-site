@@ -359,7 +359,7 @@ svg { flex: 0 0 auto; }
 .password-field { position:relative; display:flex; align-items:center; }.password-field input { flex:1; }.password-field a { position:absolute; right:12px; font-size:11px; color:var(--teal-deep); font-weight:600; }
 .password-rules { display:flex; gap:14px; font-size:11px; color:#8a9895; }.password-rules svg { width:12px; }.password-rules .valid { color:#2d9160; }
 .auth-divider { display:flex; align-items:center; gap:12px; color:#a3b0ad; font-size:11px; margin:6px 0; }.auth-divider::before, .auth-divider::after { content:""; flex:1; height:1px; background:#e0e5e2; }
-.sso-button { border:1px solid #d5ddda; background:white; border-radius:9px; min-height:44px; display:flex; align-items:center; justify-content:center; gap:9px; font-size:13px; font-weight:600; cursor:pointer; }.sso-button svg:last-child { margin-left:auto; width:14px; }
+.sso-button { border:1px solid #d5ddda; background:white; border-radius:9px; min-height:44px; display:flex; align-items:center; justify-content:center; gap:9px; font-size:13px; font-weight:600; cursor:pointer; padding: 12px; }.sso-button svg:last-child { margin-left:auto; width:14px; }
 .auth-switch { text-align:center; font-size:12px; color:#5d6d69; margin:4px 0 0; }.auth-switch a { color:var(--teal-deep); font-weight:650; }
 .auth-security { display:flex; gap:8px; align-items:center; font-size:11px; color:#6f7d7a; margin-top:6px; }.auth-security svg { width:14px; color:var(--teal-deep); }
 .auth-footer { position:absolute; bottom:24px; left:0; right:0; display:flex; justify-content:center; gap:24px; font-size:10px; color:#7e908c; z-index:1; }
