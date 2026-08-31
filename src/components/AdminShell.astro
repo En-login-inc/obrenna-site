@@ -3,6 +3,7 @@ import Logo from "./Logo.astro";
 import Icon from "./Icon.astro";
 import Status from "./Status.astro";
 import { adminNav, routes } from "../lib/routes";
+import { getPortalAccount } from "../lib/portal-account";
 
 interface Props {
   title: string;
@@ -11,14 +12,19 @@ interface Props {
 
 const { title, eyebrow } = Astro.props;
 const path = Astro.url.pathname;
+const account = await getPortalAccount(Astro.request);
+
+if (!account) {
+  return Astro.redirect(`/sign-in?returnTo=${encodeURIComponent(path)}`);
+}
 ---
 
 <div class="portal-page">
   <aside class="portal-sidebar">
     <div class="portal-logo"><Logo /></div>
     <button class="org-switcher">
-      <span class="org-avatar">NL</span>
-      <span><b>Northstar Labs</b><small>Production</small></span>
+      <span class="org-avatar">{account.organization.initials}</span>
+      <span><b>{account.organization.name}</b><small>{account.organization.role} account</small></span>
       <Icon name="chevron-down" size={14} />
     </button>
     <nav>
@@ -46,14 +52,14 @@ const path = Astro.url.pathname;
       <a href={routes.machines}>View infrastructure <Icon name="arrow-right" size={12} /></a>
     </div>
     <div class="sidebar-user">
-      <span>DJ</span>
-      <div><b>Darian J.</b><small>Organization owner</small></div>
+      <span>{account.user.initials}</span>
+      <div><b>{account.user.fullName}</b><small>{account.user.email}</small></div>
       <Icon name="more-horizontal" size={15} />
     </div>
   </aside>
   <main class="portal-main">
     <header class="portal-topbar">
-      <div class="portal-breadcrumb"><span>Northstar Labs</span><Icon name="chevron-right" size={13} /><b>{title}</b></div>
+      <div class="portal-breadcrumb"><span>{account.organization.name}</span><Icon name="chevron-right" size={13} /><b>{title}</b></div>
       <div class="topbar-actions">
         <button><Icon name="search" size={16} /></button>
         <button class="notification-button"><Icon name="activity" size={16} /><span></span></button>

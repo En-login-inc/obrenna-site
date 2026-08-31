@@ -32,16 +32,20 @@ export interface AuthSession {
  * If called from desktop app (via ?desktop_callback=...), return to the desktop.
  * Otherwise, redirect to org creation or portal depending on org enrollment.
  */
-function getRedirectAfterAuth(): string {
+function getRedirectAfterAuth(hasOrganization = false): string {
   const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
   const desktopCallback = params.get('desktop_callback');
+  const returnTo = params.get('returnTo');
 
   if (desktopCallback) {
     return desktopCallback;
   }
 
-  // Default to org creation for new users
-  return '/onboarding/create-organization';
+  if (returnTo?.startsWith('/') && !returnTo.startsWith('//')) {
+    return returnTo;
+  }
+
+  return hasOrganization ? '/portal/admin' : '/onboarding/create-organization';
 }
 
 export async function signIn(payload: SignInPayload): Promise<AuthResult> {
@@ -69,7 +73,7 @@ export async function signIn(payload: SignInPayload): Promise<AuthResult> {
       sessionStorage.setItem('auth_session', JSON.stringify(data.session));
     }
 
-    return { ok: true, redirectTo: getRedirectAfterAuth() };
+    return { ok: true, redirectTo: getRedirectAfterAuth(Boolean(data.organization)) };
   } catch (error) {
     return { ok: false, redirectTo: '', error: String(error) };
   }

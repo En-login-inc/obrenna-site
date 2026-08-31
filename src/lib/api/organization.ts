@@ -14,13 +14,21 @@ export interface Invitation {
   expiresAt: string;
 }
 
-// TODO(backend): Replace with a real call (e.g. POST /api/organizations) that reserves the
-// identifier (must be globally unique), persists region/retention/org-type defaults, and
-// provisions the initial control-plane config revision (v1) for the new organization.
 export async function createOrganization(
-  _payload: CreateOrganizationPayload
+  payload: CreateOrganizationPayload
 ): Promise<{ ok: boolean; organizationId: string }> {
-  return { ok: true, organizationId: "org_mock_northstar" };
+  const response = await fetch('/api/auth/organizations', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(payload),
+  });
+  const data = await response.json().catch(() => ({}));
+
+  return {
+    ok: response.ok && data.ok,
+    organizationId: data.organization?.id ?? '',
+  };
 }
 
 // TODO(backend): Replace with a real lookup (e.g. GET /api/invitations/:token) resolving the

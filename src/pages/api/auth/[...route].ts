@@ -157,7 +157,7 @@ async function handleSignIn({ request, url }: { request: Request; url: URL; rout
 
     // Look up billing status
     const orgResult = await client.query(
-      `SELECT o.id, o.name, s.status as billing_status
+      `SELECT o.id, o.name, om.role, s.status as billing_status
        FROM organization_memberships om
        JOIN organizations o ON om.organization_id = o.id
        LEFT JOIN subscriptions s ON s.organization_id = o.id
@@ -199,7 +199,7 @@ async function handleSignIn({ request, url }: { request: Request; url: URL; rout
         id: sessionResult.rows[0].id,
         expires_at: expiresAt.toISOString(),
       },
-      organization: orgId ? { id: orgId, name: orgName, billingStatus } : undefined,
+      organization: orgId ? { id: orgId, name: orgName, role: org.role, billingStatus } : undefined,
     });
 
     response.headers.append('Set-Cookie', `${authConfig.cookieName}=session:${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000`);
@@ -210,9 +210,9 @@ async function handleSignIn({ request, url }: { request: Request; url: URL; rout
 async function handleSignOut({ request }: { request: Request; url: URL; route: string }) {
   const cookie = getCookieValue(request.headers.get('cookie'), authConfig.cookieName);
   if (cookie?.startsWith('session:')) {
-    const sessionId = cookie.replace('session:', '');
+    const sessionToken = cookie.replace('session:', '');
     await withAuthDb(async (client) => {
-      await client.query('UPDATE auth_sessions SET status = $1, revoked_at = NOW() WHERE id = $2', ['revoked', sessionId]);
+      await client.query('UPDATE auth_sessions SET status = $1, revoked_at = NOW() WHERE session_token = $2', ['revoked', sessionToken]);
     });
   }
 
@@ -227,13 +227,13 @@ async function handleMe({ request }: { request: Request; url: URL; route: string
     return buildError('Not authenticated', 401);
   }
 
-  const sessionId = cookie.replace('session:', '');
+  const sessionToken = cookie.replace('session:', '');
   return withAuthDb(async (client) => {
     const session = await client.query(
       `SELECT s.user_id, s.expires_at, s.status
        FROM auth_sessions s
-       WHERE s.id = $1 AND s.status = 'active' AND s.expires_at > NOW()`,
-      [sessionId],
+      WHERE s.session_token = $1 AND s.status = 'active' AND s.expires_at > NOW()`,
+          [sessionToken],
     );
 
     if (!session.rowCount) {
@@ -254,12 +254,12 @@ async function handleOrganizations({ request }: { request: Request; url: URL; ro
   const cookie = getCookieValue(request.headers.get('cookie'), authConfig.cookieName);
   if (!cookie?.startsWith('session:')) return buildError('Not authenticated', 401);
 
-  const sessionId = cookie.replace('session:', '');
+  const sessionToken = cookie.replace('session:', '');
 
   return withAuthDb(async (client) => {
     const sessionCheck = await client.query(
-      `SELECT user_id FROM auth_sessions WHERE id = $1 AND status = 'active' AND expires_at > NOW()`,
-      [sessionId],
+      `SELECT user_id FROM auth_sessions WHERE session_token = $1 AND status = 'active' AND expires_at > NOW()`,
+      [sessionToken],
     );
 
     if (!sessionCheck.rowCount) {
@@ -267,6 +267,45 @@ async function handleOrganizations({ request }: { request: Request; url: URL; ro
     }
 
     const userId = sessionCheck.rows[0].user_id;
+    if (request.method === 'POST') {
+      const body = await request.json().catch(() => ({}));
+      const name = String(body.name ?? '').trim();
+      const slug = String(body.identifier ?? '').trim().toLowerCase();
+      const region = String(body.region ?? '').trim();
+      const orgType = String(body.orgType ?? '').trim();
+
+      if (!name || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+        return buildError('A name and valid organization identifier are required', 400);
+      }
+
+      try {
+        await client.query('BEGIN');
+        const organizationResult = await client.query(
+          `INSERT INTO organizations (id, name, slug, status, metadata, created_at, updated_at)
+           VALUES (gen_random_uuid(), $1, $2, 'active', $3::jsonb, NOW(), NOW())
+           RETURNING id, name, slug, status`,
+          [name, slug, JSON.stringify({ region, orgType })],
+        );
+        const organization = organizationResult.rows[0];
+
+        await client.query(
+          `INSERT INTO organization_memberships
+             (id, user_id, organization_id, role, status, created_at, updated_at)
+           VALUES (gen_random_uuid(), $1, $2, 'owner', 'active', NOW(), NOW())`,
+          [userId, organization.id],
+        );
+        await client.query('COMMIT');
+
+        return Response.json({ ok: true, organization }, { status: 201 });
+      } catch (error) {
+        await client.query('ROLLBACK');
+        if ((error as { code?: string }).code === '23505') {
+          return buildError('Organization identifier is already in use', 409);
+        }
+        throw error;
+      }
+    }
+
     const orgs = await client.query(
       `SELECT o.id, o.name, o.slug, o.status
        FROM organizations o
@@ -293,14 +332,14 @@ async function handleRefresh({ request }: { request: Request; url: URL; route: s
     return buildError('Not authenticated', 401);
   }
 
-  const sessionId = cookie.replace('session:', '');
+  const sessionToken = cookie.replace('session:', '');
   return withAuthDb(async (client) => {
     const result = await client.query(
       `UPDATE auth_sessions
        SET expires_at = NOW() + INTERVAL '30 days', updated_at = NOW()
-       WHERE id = $1 AND status = 'active' AND expires_at > NOW()
+      WHERE session_token = $1 AND status = 'active' AND expires_at > NOW()
        RETURNING id, expires_at`,
-      [sessionId],
+          [sessionToken],
     );
 
     if (!result.rowCount) {
@@ -308,7 +347,7 @@ async function handleRefresh({ request }: { request: Request; url: URL; route: s
     }
 
     const response = Response.json({ ok: true, session: result.rows[0] });
-    response.headers.append('Set-Cookie', `${authConfig.cookieName}=session:${sessionId}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000`);
+    response.headers.append('Set-Cookie', `${authConfig.cookieName}=session:${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000`);
     return response;
   });
 }
