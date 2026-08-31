@@ -12,6 +12,8 @@ export interface SignUpPayload {
 export interface AuthResult {
   ok: boolean;
   redirectTo: string;
+  /** True when redirectTo is a desktop-app deep link (e.g. `obrenna://auth?...`). */
+  isDesktopRedirect?: boolean;
   error?: string;
 }
 
@@ -27,19 +29,41 @@ export interface AuthSession {
   expires_at: string;
 }
 
+interface AuthResponseData {
+  user: { id: string; email: string; full_name: string; status: string };
+  session: { id: string; token: string; expires_at: string; billing_status?: string };
+  organization?: { id: string; name: string; role: string; billingStatus: string };
+}
+
+function getDesktopCallback(): string | null {
+  const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+  return params.get('desktop_callback');
+}
+
 /**
- * Determine the post-auth redirect URL.
- * If called from desktop app (via ?desktop_callback=...), return to the desktop.
- * Otherwise, redirect to org creation or portal depending on org enrollment.
+ * Build the `obrenna://auth?token=...` deep-link URL the desktop app expects,
+ * using the session token from the just-completed sign-in/sign-up response
+ * (the raw token never leaves the server otherwise -- it's stored HttpOnly).
+ */
+function buildDesktopCallbackUrl(desktopCallback: string, data: AuthResponseData): string {
+  const url = new URL(desktopCallback);
+  url.searchParams.set('token', data.session.token);
+  url.searchParams.set('expires_at', data.session.expires_at);
+  url.searchParams.set('user_id', data.user.id);
+  url.searchParams.set('email', data.user.email);
+  url.searchParams.set('org_id', data.organization?.id ?? '');
+  url.searchParams.set('org_name', data.organization?.name ?? '');
+  url.searchParams.set('billing_status', data.organization?.billingStatus ?? data.session.billing_status ?? 'trialing');
+  return url.toString();
+}
+
+/**
+ * Determine the post-auth redirect URL for the normal web flow.
+ * (Desktop-callback redirects are handled separately via buildDesktopCallbackUrl.)
  */
 function getRedirectAfterAuth(hasOrganization = false): string {
   const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
-  const desktopCallback = params.get('desktop_callback');
   const returnTo = params.get('returnTo');
-
-  if (desktopCallback) {
-    return desktopCallback;
-  }
 
   if (returnTo?.startsWith('/') && !returnTo.startsWith('//')) {
     return returnTo;
@@ -73,7 +97,12 @@ export async function signIn(payload: SignInPayload): Promise<AuthResult> {
       sessionStorage.setItem('auth_session', JSON.stringify(data.session));
     }
 
-    return { ok: true, redirectTo: getRedirectAfterAuth(Boolean(data.organization)) };
+    const desktopCallback = getDesktopCallback();
+    const redirectTo = desktopCallback
+      ? buildDesktopCallbackUrl(desktopCallback, data)
+      : getRedirectAfterAuth(Boolean(data.organization));
+
+    return { ok: true, redirectTo, isDesktopRedirect: Boolean(desktopCallback) };
   } catch (error) {
     return { ok: false, redirectTo: '', error: String(error) };
   }
@@ -108,7 +137,12 @@ export async function signUp(payload: SignUpPayload): Promise<AuthResult> {
       sessionStorage.setItem('auth_session', JSON.stringify(data.session));
     }
 
-    return { ok: true, redirectTo: getRedirectAfterAuth() };
+    const desktopCallback = getDesktopCallback();
+    const redirectTo = desktopCallback
+      ? buildDesktopCallbackUrl(desktopCallback, data)
+      : getRedirectAfterAuth();
+
+    return { ok: true, redirectTo, isDesktopRedirect: Boolean(desktopCallback) };
   } catch (error) {
     return { ok: false, redirectTo: '', error: String(error) };
   }
@@ -117,6 +151,20 @@ export async function signUp(payload: SignUpPayload): Promise<AuthResult> {
 export async function startSsoSignIn(): Promise<AuthResult> {
   // Placeholder for SAML/OIDC flow
   return { ok: false, redirectTo: '', error: 'SSO not yet implemented' };
+}
+
+/**
+ * Navigate to the post-auth destination. For a desktop-app handoff, the
+ * `obrenna://` navigation doesn't unload this tab, so also try to close it --
+ * browsers only allow this for tabs opened via the OS (not window.open), and
+ * even then may silently ignore it, hence the "you can close this" fallback UI.
+ */
+export function completeAuthRedirect(result: AuthResult): void {
+  if (typeof window === 'undefined' || !result.ok) return;
+  window.location.href = result.redirectTo;
+  if (result.isDesktopRedirect) {
+    setTimeout(() => window.close(), 400);
+  }
 }
 
 export async function getCurrentUser(): Promise<AuthUser | null> {

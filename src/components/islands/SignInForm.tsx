@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { ArrowRight, KeyRound, ChevronRight, ShieldCheck } from "lucide-react";
-import { signIn, startSsoSignIn } from "../../lib/api/auth";
+import { signIn, startSsoSignIn, completeAuthRedirect } from "../../lib/api/auth";
 
 export default function SignInForm() {
   const [submitting, setSubmitting] = useState(false);
+  const [desktopHandoff, setDesktopHandoff] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -14,7 +15,8 @@ export default function SignInForm() {
       password: String(form.get("password") ?? ""),
     });
     if (result.ok) {
-      window.location.href = result.redirectTo;
+      if (result.isDesktopRedirect) setDesktopHandoff(true);
+      completeAuthRedirect(result);
     } else {
       alert(`Sign in failed: ${result.error}`);
       setSubmitting(false);
@@ -23,7 +25,18 @@ export default function SignInForm() {
 
   async function handleSso() {
     const result = await startSsoSignIn();
-    if (result.ok) window.location.href = result.redirectTo;
+    if (result.ok) completeAuthRedirect(result);
+  }
+
+  if (desktopHandoff) {
+    return (
+      <div className="auth-card">
+        <div className="auth-card-head">
+          <h2>Signed in</h2>
+          <p>Handing off to the Obrenna desktop app. This tab will close automatically — you can also close it now.</p>
+        </div>
+      </div>
+    );
   }
 
   return (

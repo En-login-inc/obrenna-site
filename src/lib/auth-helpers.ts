@@ -23,3 +23,11 @@ export function getCookieValue(headerValue: string | null | undefined, key: stri
 
   return null;
 }
+
+/** Extract a bearer token from an `Authorization: Bearer <token>` header,
+ *  used by the desktop app in place of the site's HttpOnly session cookie. */
+export function getBearerToken(headerValue: string | null | undefined) {
+  if (!headerValue) return null;
+  const match = headerValue.match(/^Bearer\s+(.+)$/i);
+  return match ? match[1].trim() : null;
+}

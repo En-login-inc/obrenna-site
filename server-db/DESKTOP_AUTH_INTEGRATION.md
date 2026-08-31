@@ -35,7 +35,7 @@ This document describes how the Obrenna desktop app integrates with the Obrenna 
 
 ```javascript
 // In Tauri app startup or login handler
-import { DesktopAuthClient } from '../../backend/desktop_auth';
+import { getLoginUrl, handleAuthCallback, signOut } from '../../Obrenna/frontend/src/lib/siteAuth';
 
 const auth = new DesktopAuthClient('obrenna://');
 const loginUrl = auth.getLoginUrl(false); // false = sign in, true = sign up
@@ -187,7 +187,7 @@ if (nextAuthTime && Date.now() > nextAuthTime.getTime()) {
 
 ## Integration Checklist for Desktop App
 
-- [ ] Add `desktop_auth` module to Tauri build (copy from backend/desktop_auth.py)
+- [x] `siteAuth` client + `SiteAuthContext` wired into the Tauri app (Obrenna/frontend/src/lib/siteAuth.ts, Obrenna/frontend/src/context/SiteAuthContext.tsx)
 - [ ] Implement deep-link handler for `obrenna://` scheme
 - [ ] Initialize auth client on app startup: `initDesktopAuth('obrenna://')`
 - [ ] Store token in persistent storage (Tauri `appDir`)

@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { authConfig } from '../../../lib/auth-config';
-import { buildError, getCookieValue } from '../../../lib/auth-helpers';
+import { buildError, getBearerToken, getCookieValue } from '../../../lib/auth-helpers';
 import { withAuthDb } from '../../../lib/auth-db';
 
 type AuthRouteHandler = (input: { request: Request; url: URL; route: string }) => Promise<Response>;
@@ -108,6 +108,7 @@ async function handleSignUp({ request, url }: { request: Request; url: URL; rout
         },
         session: {
           id: sessionResult.rows[0].id,
+          token: sessionToken,
           expires_at: expiresAt.toISOString(),
         },
       },
@@ -197,7 +198,9 @@ async function handleSignIn({ request, url }: { request: Request; url: URL; rout
       },
       session: {
         id: sessionResult.rows[0].id,
+        token: sessionToken,
         expires_at: expiresAt.toISOString(),
+        billing_status: billingStatus,
       },
       organization: orgId ? { id: orgId, name: orgName, role: org.role, billingStatus } : undefined,
     });
@@ -209,8 +212,10 @@ async function handleSignIn({ request, url }: { request: Request; url: URL; rout
 
 async function handleSignOut({ request }: { request: Request; url: URL; route: string }) {
   const cookie = getCookieValue(request.headers.get('cookie'), authConfig.cookieName);
-  if (cookie?.startsWith('session:')) {
-    const sessionToken = cookie.replace('session:', '');
+  const bearer = getBearerToken(request.headers.get('authorization'));
+  const sessionToken = bearer || (cookie?.startsWith('session:') ? cookie.replace('session:', '') : null);
+
+  if (sessionToken) {
     await withAuthDb(async (client) => {
       await client.query('UPDATE auth_sessions SET status = $1, revoked_at = NOW() WHERE session_token = $2', ['revoked', sessionToken]);
     });
@@ -223,11 +228,12 @@ async function handleSignOut({ request }: { request: Request; url: URL; route: s
 
 async function handleMe({ request }: { request: Request; url: URL; route: string }) {
   const cookie = getCookieValue(request.headers.get('cookie'), authConfig.cookieName);
-  if (!cookie?.startsWith('session:')) {
+  const bearer = getBearerToken(request.headers.get('authorization'));
+  const sessionToken = bearer || (cookie?.startsWith('session:') ? cookie.replace('session:', '') : null);
+  if (!sessionToken) {
     return buildError('Not authenticated', 401);
   }
 
-  const sessionToken = cookie.replace('session:', '');
   return withAuthDb(async (client) => {
     const session = await client.query(
       `SELECT s.user_id, s.expires_at, s.status
