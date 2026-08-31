@@ -14,7 +14,12 @@ export default function SignUpForm() {
       email: String(form.get("email") ?? ""),
       password: String(form.get("password") ?? ""),
     });
-    if (result.ok) window.location.href = result.redirectTo;
+    if (result.ok) {
+      window.location.href = result.redirectTo;
+    } else {
+      alert(`Sign up failed: ${result.error}`);
+      setSubmitting(false);
+    }
   }
 
   async function handleSso() {

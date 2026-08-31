@@ -13,7 +13,12 @@ export default function SignInForm() {
       email: String(form.get("email") ?? ""),
       password: String(form.get("password") ?? ""),
     });
-    if (result.ok) window.location.href = result.redirectTo;
+    if (result.ok) {
+      window.location.href = result.redirectTo;
+    } else {
+      alert(`Sign in failed: ${result.error}`);
+      setSubmitting(false);
+    }
   }
 
   async function handleSso() {

@@ -12,26 +12,139 @@ export interface SignUpPayload {
 export interface AuthResult {
   ok: boolean;
   redirectTo: string;
+  error?: string;
 }
 
-// TODO(backend): Replace with a real session-based auth call (e.g. POST /api/auth/sign-in)
-// that verifies credentials against the control-plane identity store, sets an HttpOnly
-// session cookie, and returns the organization the user should land in. Currently this
-// always "succeeds" and routes to the admin portal so the mock flow is walkable end to end.
-export async function signIn(_payload: SignInPayload): Promise<AuthResult> {
-  return { ok: true, redirectTo: "/portal/admin" };
+export interface AuthUser {
+  id: string;
+  email: string;
+  full_name: string;
+  status: string;
 }
 
-// TODO(backend): Replace with a real account-creation call (e.g. POST /api/auth/sign-up)
-// that validates the work email domain, enforces the password policy shown in the UI,
-// creates the identity record, and either routes to org creation (no invite) or org join
-// (pending invite) depending on the account's invitation state.
-export async function signUp(_payload: SignUpPayload): Promise<AuthResult> {
-  return { ok: true, redirectTo: "/onboarding/create-organization" };
+export interface AuthSession {
+  id: string;
+  expires_at: string;
 }
 
-// TODO(backend): Replace with a real SSO redirect (e.g. GET /api/auth/sso/start) that
-// kicks off the organization's configured SAML/OIDC flow instead of navigating directly.
+/**
+ * Determine the post-auth redirect URL.
+ * If called from desktop app (via ?desktop_callback=...), return to the desktop.
+ * Otherwise, redirect to org creation or portal depending on org enrollment.
+ */
+function getRedirectAfterAuth(): string {
+  const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+  const desktopCallback = params.get('desktop_callback');
+
+  if (desktopCallback) {
+    return desktopCallback;
+  }
+
+  // Default to org creation for new users
+  return '/onboarding/create-organization';
+}
+
+export async function signIn(payload: SignInPayload): Promise<AuthResult> {
+  try {
+    const response = await fetch('/api/auth/sign-in', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: response.statusText }));
+      return { ok: false, redirectTo: '', error: error.error || 'Sign in failed' };
+    }
+
+    const data = await response.json();
+    if (!data.ok) {
+      return { ok: false, redirectTo: '', error: data.error || 'Sign in failed' };
+    }
+
+    // Store user context for the UI
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('auth_user', JSON.stringify(data.user));
+      sessionStorage.setItem('auth_session', JSON.stringify(data.session));
+    }
+
+    return { ok: true, redirectTo: getRedirectAfterAuth() };
+  } catch (error) {
+    return { ok: false, redirectTo: '', error: String(error) };
+  }
+}
+
+export async function signUp(payload: SignUpPayload): Promise<AuthResult> {
+  try {
+    const response = await fetch('/api/auth/sign-up', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        email: payload.email,
+        name: payload.fullName,
+        password: payload.password,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: response.statusText }));
+      return { ok: false, redirectTo: '', error: error.error || 'Sign up failed' };
+    }
+
+    const data = await response.json();
+    if (!data.ok) {
+      return { ok: false, redirectTo: '', error: data.error || 'Sign up failed' };
+    }
+
+    // Store user context for the UI
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('auth_user', JSON.stringify(data.user));
+      sessionStorage.setItem('auth_session', JSON.stringify(data.session));
+    }
+
+    return { ok: true, redirectTo: getRedirectAfterAuth() };
+  } catch (error) {
+    return { ok: false, redirectTo: '', error: String(error) };
+  }
+}
+
 export async function startSsoSignIn(): Promise<AuthResult> {
-  return { ok: true, redirectTo: "/portal/admin" };
+  // Placeholder for SAML/OIDC flow
+  return { ok: false, redirectTo: '', error: 'SSO not yet implemented' };
+}
+
+export async function getCurrentUser(): Promise<AuthUser | null> {
+  try {
+    const response = await fetch('/api/auth/me', {
+      method: 'GET',
+      credentials: 'include',
+    });
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    return data.ok ? data.user : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function signOut(): Promise<boolean> {
+  try {
+    await fetch('/api/auth/sign-out', {
+      method: 'POST',
+      credentials: 'include',
+    });
+
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('auth_user');
+      sessionStorage.removeItem('auth_session');
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
 }
