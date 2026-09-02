@@ -16,19 +16,28 @@ export interface Invitation {
 
 export async function createOrganization(
   payload: CreateOrganizationPayload
-): Promise<{ ok: boolean; organizationId: string }> {
-  const response = await fetch('/api/auth/organizations', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify(payload),
-  });
-  const data = await response.json().catch(() => ({}));
+): Promise<{ ok: boolean; organizationId: string; error?: string }> {
+  try {
+    const response = await fetch('/api/auth/organizations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json().catch(() => ({}));
 
-  return {
-    ok: response.ok && data.ok,
-    organizationId: data.organization?.id ?? '',
-  };
+    return {
+      ok: response.ok && data.ok,
+      organizationId: data.organization?.id ?? '',
+      error: data.error || (response.ok ? undefined : 'Could not create organization'),
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      organizationId: '',
+      error: error instanceof Error ? error.message : 'Could not reach Obrenna',
+    };
+  }
 }
 
 // TODO(backend): Replace with a real lookup (e.g. GET /api/invitations/:token) resolving the

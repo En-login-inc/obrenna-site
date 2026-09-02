@@ -2,7 +2,11 @@ import { useState } from "react";
 import { ArrowRight, CheckCircle2, ShieldCheck } from "lucide-react";
 import { createOrganization } from "../../lib/api/organization";
 
-export default function CreateOrganizationForm() {
+interface CreateOrganizationFormProps {
+  desktopCallback?: string;
+}
+
+export default function CreateOrganizationForm({ desktopCallback }: CreateOrganizationFormProps) {
   const [submitting, setSubmitting] = useState(false);
   const [name, setName] = useState("Northstar Labs");
   const [slug, setSlug] = useState("northstar-labs");
@@ -12,7 +16,14 @@ export default function CreateOrganizationForm() {
   async function handleCreate() {
     setSubmitting(true);
     const result = await createOrganization({ name, identifier: slug, region, orgType });
-    if (result.ok) window.location.href = "/portal/admin";
+    if (result.ok) {
+      window.location.href = desktopCallback
+        ? `/api/auth/desktop-callback?desktop_callback=${encodeURIComponent(desktopCallback)}`
+        : "/portal/admin";
+    } else {
+      setSubmitting(false);
+      alert(result.error || "Could not create organization");
+    }
   }
 
   return (

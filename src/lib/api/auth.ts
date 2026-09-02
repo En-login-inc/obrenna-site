@@ -139,10 +139,10 @@ export async function signUp(payload: SignUpPayload): Promise<AuthResult> {
 
     const desktopCallback = getDesktopCallback();
     const redirectTo = desktopCallback
-      ? buildDesktopCallbackUrl(desktopCallback, data)
+      ? `/onboarding/create-organization?desktop_callback=${encodeURIComponent(desktopCallback)}`
       : getRedirectAfterAuth();
 
-    return { ok: true, redirectTo, isDesktopRedirect: Boolean(desktopCallback) };
+    return { ok: true, redirectTo, isDesktopRedirect: false };
   } catch (error) {
     return { ok: false, redirectTo: '', error: String(error) };
   }
