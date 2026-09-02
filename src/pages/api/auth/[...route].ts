@@ -8,6 +8,8 @@ type AuthRouteHandler = (input: { request: Request; url: URL; route: string }) =
 const routeMap: Record<string, AuthRouteHandler> = {
   'sign-up': handleSignUp,
   'sign-in': handleSignIn,
+  'desktop-callback': handleDesktopCallback,
+  'desktop-session': handleDesktopSession,
   'sign-out': handleSignOut,
   me: handleMe,
   organizations: handleOrganizations,
@@ -92,9 +94,7 @@ async function handleSignUp({ request, url }: { request: Request; url: URL; rout
       cbUrl.searchParams.set('email', user.email);
       cbUrl.searchParams.set('billing_status', 'trialing');
 
-      const response = Response.redirect(cbUrl.toString(), 302);
-      response.headers.append('Set-Cookie', `${authConfig.cookieName}=session:${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000`);
-      return response;
+      return redirectWithSessionCookie(cbUrl.toString(), sessionToken);
     }
 
     const response = Response.json(
@@ -183,9 +183,7 @@ async function handleSignIn({ request, url }: { request: Request; url: URL; rout
       cbUrl.searchParams.set('org_name', orgName);
       cbUrl.searchParams.set('billing_status', billingStatus);
 
-      const response = Response.redirect(cbUrl.toString(), 302);
-      response.headers.append('Set-Cookie', `${authConfig.cookieName}=session:${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000`);
-      return response;
+      return redirectWithSessionCookie(cbUrl.toString(), sessionToken);
     }
 
     const response = Response.json({
@@ -210,12 +208,94 @@ async function handleSignIn({ request, url }: { request: Request; url: URL; rout
   });
 }
 
+async function handleDesktopCallback({ request, url }: { request: Request; url: URL; route: string }) {
+  const desktopCallback = url.searchParams.get('desktop_callback');
+  if (!desktopCallback || !desktopCallback.startsWith('obrenna://auth')) {
+    return buildError('A valid desktop callback is required', 400);
+  }
+
+  const cookie = getCookieValue(request.headers.get('cookie'), authConfig.cookieName);
+  const sessionToken = cookie?.startsWith('session:') ? cookie.slice('session:'.length) : null;
+  if (!sessionToken) return buildError('Not authenticated', 401);
+
+  return withAuthDb(async (client) => {
+    const result = await client.query(
+      `SELECT s.expires_at, u.id, u.email
+       FROM auth_sessions s
+       JOIN users u ON u.id = s.user_id
+       WHERE s.session_token = $1 AND s.status = 'active' AND s.expires_at > NOW()
+       LIMIT 1`,
+      [sessionToken],
+    );
+    const session = result.rows[0];
+    if (!session) return buildError('Session expired or invalid', 401);
+
+    const orgResult = await client.query(
+      `SELECT o.id, o.name, om.role, s.status as billing_status
+       FROM organization_memberships om
+       JOIN organizations o ON om.organization_id = o.id
+       LEFT JOIN subscriptions s ON s.organization_id = o.id
+       WHERE om.user_id = $1 AND om.status = 'active'
+       LIMIT 1`,
+      [session.id],
+    );
+    const org = orgResult.rows[0];
+    const callbackUrl = new URL(desktopCallback);
+    callbackUrl.searchParams.set('token', sessionToken);
+    callbackUrl.searchParams.set('expires_at', new Date(session.expires_at).toISOString());
+    callbackUrl.searchParams.set('user_id', session.id);
+    callbackUrl.searchParams.set('email', session.email);
+    callbackUrl.searchParams.set('org_id', org?.id ?? '');
+    callbackUrl.searchParams.set('org_name', org?.name ?? '');
+    callbackUrl.searchParams.set('billing_status', org?.billing_status ?? 'trialing');
+    return redirectWithSessionCookie(callbackUrl.toString(), sessionToken);
+  });
+}
+
+async function handleDesktopSession({ request, url }: { request: Request; url: URL; route: string }) {
+  const desktopToken = url.searchParams.get('token');
+  const returnTo = url.searchParams.get('returnTo') || '/portal/admin';
+  if (!returnTo.startsWith('/') || returnTo.startsWith('//')) {
+    return buildError('A relative return path is required', 400);
+  }
+
+  return withAuthDb(async (client) => {
+    const cookie = getCookieValue(request.headers.get('cookie'), authConfig.cookieName);
+    const browserToken = cookie?.startsWith('session:') ? cookie.slice('session:'.length) : null;
+    const result = await client.query(
+      `SELECT session_token
+       FROM auth_sessions
+       WHERE session_token = ANY($1::text[]) AND status = 'active' AND expires_at > NOW()
+       ORDER BY CASE WHEN session_token = $2 THEN 0 ELSE 1 END
+       LIMIT 1`,
+      [[browserToken, desktopToken].filter((token): token is string => Boolean(token)), browserToken],
+    );
+    const sessionToken = result.rows[0]?.session_token;
+    if (!sessionToken) return buildError('Session expired or invalid', 401);
+
+    return redirectWithSessionCookie(new URL(returnTo, url.origin).toString(), sessionToken);
+  });
+}
+
+function redirectWithSessionCookie(location: string, sessionToken: string) {
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: location,
+      'Set-Cookie': `${authConfig.cookieName}=session:${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000`,
+    },
+  });
+}
+
 async function handleSignOut({ request }: { request: Request; url: URL; route: string }) {
   const cookie = getCookieValue(request.headers.get('cookie'), authConfig.cookieName);
   const bearer = getBearerToken(request.headers.get('authorization'));
   const sessionToken = bearer || (cookie?.startsWith('session:') ? cookie.replace('session:', '') : null);
 
-  if (sessionToken) {
+  // A browser logout only removes the browser's cookie. The desktop app uses
+  // the same session token as a bearer credential, so revoking a cookie-only
+  // session would also log the desktop app out.
+  if (bearer && sessionToken) {
     await withAuthDb(async (client) => {
       await client.query('UPDATE auth_sessions SET status = $1, revoked_at = NOW() WHERE session_token = $2', ['revoked', sessionToken]);
     });

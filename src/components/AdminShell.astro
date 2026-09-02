@@ -54,7 +54,14 @@ if (!account) {
     <div class="sidebar-user">
       <span>{account.user.initials}</span>
       <div><b>{account.user.fullName}</b><small>{account.user.email}</small></div>
-      <Icon name="more-horizontal" size={15} />
+      <div class="sidebar-user-menu">
+        <button class="sidebar-user-menu-trigger" type="button" aria-label="Open account menu" aria-expanded="false">
+          <Icon name="more-horizontal" size={15} />
+        </button>
+        <div class="sidebar-user-menu-panel" hidden>
+          <button type="button" data-sign-out>Log out</button>
+        </div>
+      </div>
     </div>
   </aside>
   <main class="portal-main">
@@ -76,3 +83,30 @@ if (!account) {
     </section>
   </main>
 </div>
+
+<script>
+  const menu = document.querySelector('.sidebar-user-menu');
+  const trigger = menu?.querySelector<HTMLButtonElement>('.sidebar-user-menu-trigger');
+  const panel = menu?.querySelector<HTMLElement>('.sidebar-user-menu-panel');
+  const signOutButton = menu?.querySelector<HTMLButtonElement>('[data-sign-out]');
+
+  trigger?.addEventListener('click', () => {
+    if (!panel) return;
+    const isOpen = !panel.hidden;
+    panel.hidden = isOpen;
+    trigger.setAttribute('aria-expanded', String(!isOpen));
+  });
+
+  signOutButton?.addEventListener('click', async () => {
+    signOutButton.disabled = true;
+    signOutButton.textContent = 'Logging out...';
+    await fetch('/api/auth/sign-out', { method: 'POST', credentials: 'include' });
+    window.location.href = '/';
+  });
+
+  document.addEventListener('click', (event) => {
+    if (!menu || !panel || !trigger || menu.contains(event.target as Node)) return;
+    panel.hidden = true;
+    trigger.setAttribute('aria-expanded', 'false');
+  });
+</script>

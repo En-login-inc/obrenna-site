@@ -2,7 +2,11 @@ import { useState } from "react";
 import { ArrowRight, KeyRound, ChevronRight, Check, ShieldCheck } from "lucide-react";
 import { signUp, startSsoSignIn, completeAuthRedirect } from "../../lib/api/auth";
 
-export default function SignUpForm() {
+interface SignUpFormProps {
+  desktopCallback?: string;
+}
+
+export default function SignUpForm({ desktopCallback }: SignUpFormProps) {
   const [submitting, setSubmitting] = useState(false);
   const [desktopHandoff, setDesktopHandoff] = useState(false);
 
@@ -34,7 +38,7 @@ export default function SignUpForm() {
       <div className="auth-card">
         <div className="auth-card-head">
           <h2>Signed in</h2>
-          <p>Handing off to the Obrenna desktop app. This tab will close automatically — you can also close it now.</p>
+          <p>Signed in. Feel free to close this window and return to the Obrenna desktop app.</p>
         </div>
       </div>
     );
@@ -74,7 +78,7 @@ export default function SignUpForm() {
         <KeyRound size={16} /> Organization SSO <ChevronRight size={16} />
       </button>
       <p className="auth-switch">
-        Already have an account? <a href="/sign-in">Sign in</a>
+        Already have an account? <a href={desktopCallback ? `/sign-in?desktop_callback=${encodeURIComponent(desktopCallback)}` : "/sign-in"}>Sign in</a>
       </p>
       <div className="auth-security">
         <ShieldCheck size={14} /> Protected with encrypted sessions and optional MFA.

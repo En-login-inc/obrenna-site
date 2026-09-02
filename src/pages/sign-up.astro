@@ -26,6 +26,6 @@ const desktopCallback = Astro.url.searchParams.get('desktop_callback');
         <div><Icon name="server" /><span><b>Your private infrastructure</b><small>Models · tools · company data</small></span></div>
       </div>
     </div>
-    <SignUpForm client:load />
+    <SignUpForm client:load desktopCallback={desktopCallback || undefined} />
   </main>
 </BaseLayout>

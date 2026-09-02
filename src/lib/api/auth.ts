@@ -154,17 +154,12 @@ export async function startSsoSignIn(): Promise<AuthResult> {
 }
 
 /**
- * Navigate to the post-auth destination. For a desktop-app handoff, the
- * `obrenna://` navigation doesn't unload this tab, so also try to close it --
- * browsers only allow this for tabs opened via the OS (not window.open), and
- * even then may silently ignore it, hence the "you can close this" fallback UI.
+ * Navigate to the post-auth destination. The desktop handoff leaves the
+ * browser window available for the user to close manually.
  */
 export function completeAuthRedirect(result: AuthResult): void {
   if (typeof window === 'undefined' || !result.ok) return;
   window.location.href = result.redirectTo;
-  if (result.isDesktopRedirect) {
-    setTimeout(() => window.close(), 400);
-  }
 }
 
 export async function getCurrentUser(): Promise<AuthUser | null> {

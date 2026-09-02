@@ -426,7 +426,14 @@ svg { flex: 0 0 auto; }
 .sidebar-health a { font-size:10px; color:var(--teal-bright); font-weight:600; display:flex; gap:5px; align-items:center; }
 .sidebar-user { display:flex; align-items:center; gap:10px; padding:10px; border-top:1px solid rgba(255,255,255,.08); margin-top:4px; }
 .sidebar-user > span:first-child { width:28px; height:28px; border-radius:50%; background:var(--teal-deep); color:white; display:grid; place-items:center; font-size:10px; font-weight:700; }
-.sidebar-user b { font-size:12px; display:block; }.sidebar-user small { font-size:9px; color:#8da09c; }.sidebar-user svg { width:15px; color:#8da09c; margin-left:auto; }
+.sidebar-user b { font-size:12px; display:block; }.sidebar-user small { font-size:9px; color:#8da09c; }
+.sidebar-user-menu { position:relative; margin-left:auto; }
+.sidebar-user-menu-trigger { display:grid; place-items:center; border:0; padding:4px; color:#8da09c; background:transparent; cursor:pointer; }
+.sidebar-user-menu-trigger:hover, .sidebar-user-menu-trigger:focus-visible { color:white; }
+.sidebar-user-menu-trigger:focus-visible { outline:2px solid var(--teal); outline-offset:2px; }
+.sidebar-user-menu-panel { position:absolute; right:0; bottom:34px; min-width:120px; padding:4px; background:#21302d; border:1px solid rgba(255,255,255,.14); border-radius:6px; box-shadow:0 8px 20px rgba(0,0,0,.2); z-index:5; }
+.sidebar-user-menu-panel button { width:100%; border:0; border-radius:4px; padding:8px 10px; color:#f2f6f4; background:transparent; text-align:left; font:inherit; font-size:12px; cursor:pointer; }
+.sidebar-user-menu-panel button:hover, .sidebar-user-menu-panel button:focus-visible { background:rgba(255,255,255,.1); outline:0; }
 .portal-main { min-height:100vh; }
 .portal-topbar { height:64px; border-bottom:1px solid #e0e5e2; background:white; display:flex; align-items:center; justify-content:space-between; padding:0 26px; position:sticky; top:0; z-index:10; }
 .portal-breadcrumb { display:flex; align-items:center; gap:7px; font-size:12px; color:#8a9895; }.portal-breadcrumb svg { width:13px; }.portal-breadcrumb b { color:#172321; }
