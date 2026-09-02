@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ArrowRight, KeyRound, ChevronRight, Check, ShieldCheck } from "lucide-react";
 import { signUp, startSsoSignIn, completeAuthRedirect } from "../../lib/api/auth";
+import { DesktopHandoff } from "./DesktopHandoff";
 
 interface SignUpFormProps {
   desktopCallback?: string;
@@ -34,14 +35,7 @@ export default function SignUpForm({ desktopCallback }: SignUpFormProps) {
   }
 
   if (desktopHandoff) {
-    return (
-      <div className="auth-card">
-        <div className="auth-card-head">
-          <h2>Signed in</h2>
-          <p>Signed in. Feel free to close this window and return to the Obrenna desktop app.</p>
-        </div>
-      </div>
-    );
+    return <DesktopHandoff />;
   }
 
   return (
