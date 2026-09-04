@@ -1,9 +1,15 @@
 import { useState } from "react";
 import { ArrowRight, KeyRound, ChevronRight, Check, ShieldCheck } from "lucide-react";
-import { signUp, startSsoSignIn } from "../../lib/api/auth";
+import { signUp, startSsoSignIn, completeAuthRedirect } from "../../lib/api/auth";
+import { DesktopHandoff } from "./DesktopHandoff";
 
-export default function SignUpForm() {
+interface SignUpFormProps {
+  desktopCallback?: string;
+}
+
+export default function SignUpForm({ desktopCallback }: SignUpFormProps) {
   const [submitting, setSubmitting] = useState(false);
+  const [desktopHandoff, setDesktopHandoff] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -14,12 +20,22 @@ export default function SignUpForm() {
       email: String(form.get("email") ?? ""),
       password: String(form.get("password") ?? ""),
     });
-    if (result.ok) window.location.href = result.redirectTo;
+    if (result.ok) {
+      if (result.isDesktopRedirect) setDesktopHandoff(true);
+      completeAuthRedirect(result);
+    } else {
+      alert(`Sign up failed: ${result.error}`);
+      setSubmitting(false);
+    }
   }
 
   async function handleSso() {
     const result = await startSsoSignIn();
-    if (result.ok) window.location.href = result.redirectTo;
+    if (result.ok) completeAuthRedirect(result);
+  }
+
+  if (desktopHandoff) {
+    return <DesktopHandoff />;
   }
 
   return (
@@ -56,10 +72,17 @@ export default function SignUpForm() {
         <KeyRound size={16} /> Organization SSO <ChevronRight size={16} />
       </button>
       <p className="auth-switch">
-        Already have an account? <a href="/sign-in">Sign in</a>
+        Already have an account? <a href={desktopCallback ? `/sign-in?desktop_callback=${encodeURIComponent(desktopCallback)}` : "/sign-in"}>Sign in</a>
       </p>
       <div className="auth-security">
         <ShieldCheck size={14} /> Protected with encrypted sessions and optional MFA.
+      </div>
+
+      <div className="auth-footer">
+        <span>Privacy</span>
+        <span>Security</span>
+        <span>Documentation</span>
+        <span>© 2026 Obrenna</span>
       </div>
     </form>
   );

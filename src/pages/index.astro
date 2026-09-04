@@ -8,6 +8,12 @@ import Eyebrow from "../components/Eyebrow.astro";
 import IconBox from "../components/IconBox.astro";
 import Icon from "../components/Icon.astro";
 import { routes } from "../lib/routes";
+import { getPortalAccount } from "../lib/portal-account";
+
+const account = await getPortalAccount(Astro.request);
+if (account) {
+  return Astro.redirect(routes.admin);
+}
 ---
 
 <BaseLayout>

@@ -8,6 +8,12 @@ import Status from "../../components/Status.astro";
 import ConnectionCheckButton from "../../components/islands/ConnectionCheckButton";
 import { routes } from "../../lib/routes";
 import { getConnectionStatus, getAvailableModels, getAvailableToolServices, getMyRecentConfirmations } from "../../lib/api/employee";
+import { getPortalAccount } from "../../lib/portal-account";
+
+const account = await getPortalAccount(Astro.request);
+if (!account) {
+  return Astro.redirect(`/sign-in?returnTo=${encodeURIComponent(Astro.url.pathname)}`);
+}
 
 const connection = await getConnectionStatus();
 const models = await getAvailableModels();
@@ -28,7 +34,7 @@ const confirmations = await getMyRecentConfirmations();
       </nav>
       <div class="employee-actions">
         <button><Icon name="circle-help" size={18} /></button>
-        <span class="employee-avatar">DJ</span>
+        <span class="employee-avatar" title={`${account.user.fullName} (${account.user.email})`}>{account.user.initials}</span>
         <Icon name="chevron-down" size={14} />
       </div>
     </header>
@@ -37,7 +43,7 @@ const confirmations = await getMyRecentConfirmations();
         <TopologyBackground />
         <div class="container employee-hero-inner">
           <div>
-            <Eyebrow>NORTHSTAR LABS</Eyebrow>
+            <Eyebrow>{account.organization.name.toUpperCase()}</Eyebrow>
             <h1>Your private AI is ready.</h1>
             <p>Connect through Obrenna Desktop to use organization-approved models and internal tools.</p>
             <div class="hero-actions">
@@ -48,7 +54,7 @@ const confirmations = await getMyRecentConfirmations();
           <div class="connection-card">
             <div>
               <span class="connection-icon"><Icon name="link-2" size={16} /></span>
-              <span><small>CONNECTION STATUS</small><b>{connection.organizationName}</b></span>
+              <span><small>CONNECTION STATUS</small><b>{account.organization.name}</b></span>
               <Status>{connection.connected ? "Connected" : "Offline"}</Status>
             </div>
             <dl>
@@ -57,7 +63,7 @@ const confirmations = await getMyRecentConfirmations();
               <div><dt>Available tools</dt><dd>{connection.availableToolCount}</dd></div>
               <div><dt>Configuration</dt><dd>{connection.configVersion} · current</dd></div>
             </dl>
-            <div class="privacy-line"><Icon name="shield-check" size={14} /> Your prompts and work stay inside Northstar Labs.</div>
+            <div class="privacy-line"><Icon name="shield-check" size={14} /> Your prompts and work stay inside {account.organization.name}.</div>
           </div>
         </div>
       </div>
@@ -118,7 +124,7 @@ const confirmations = await getMyRecentConfirmations();
       </section>
     </main>
     <footer class="employee-footer">
-      <span>Northstar Labs · Obrenna organization portal</span>
+      <span>{account.organization.name} · Signed in as {account.user.fullName} ({account.organization.role})</span>
       <div><a>Privacy</a><a>Security</a><a>Status</a></div>
     </footer>
   </div>

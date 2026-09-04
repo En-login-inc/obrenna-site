@@ -5,10 +5,15 @@ import Logo from "../components/Logo.astro";
 import Eyebrow from "../components/Eyebrow.astro";
 import Icon from "../components/Icon.astro";
 import SignUpForm from "../components/islands/SignUpForm";
+
+// Desktop app callback support: if the desktop app navigates here with ?desktop_callback=...,
+// the sign-up will redirect back to that callback URL with the auth token.
+// This is passed to the form via URL params.
+const desktopCallback = Astro.url.searchParams.get('desktop_callback');
 ---
 
 <BaseLayout title="Create account | Obrenna">
-  <main class="auth-page">
+  <main class="auth-page" data-desktop-callback={desktopCallback || undefined}>
     <TopologyBackground />
     <div class="auth-brand"><Logo /></div>
     <div class="auth-copy">
@@ -21,12 +26,6 @@ import SignUpForm from "../components/islands/SignUpForm";
         <div><Icon name="server" /><span><b>Your private infrastructure</b><small>Models · tools · company data</small></span></div>
       </div>
     </div>
-    <SignUpForm client:load />
-    <div class="auth-footer">
-      <span>Privacy</span>
-      <span>Security</span>
-      <span>Documentation</span>
-      <span>© 2026 Obrenna</span>
-    </div>
+    <SignUpForm client:load desktopCallback={desktopCallback || undefined} />
   </main>
 </BaseLayout>
