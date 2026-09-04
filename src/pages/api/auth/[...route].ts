@@ -260,17 +260,37 @@ async function handleDesktopSession({ request, url }: { request: Request; url: U
   }
 
   return withAuthDb(async (client) => {
-    const cookie = getCookieValue(request.headers.get('cookie'), authConfig.cookieName);
-    const browserToken = cookie?.startsWith('session:') ? cookie.slice('session:'.length) : null;
-    const result = await client.query(
-      `SELECT session_token
-       FROM auth_sessions
-       WHERE session_token = ANY($1::text[]) AND status = 'active' AND expires_at > NOW()
-       ORDER BY CASE WHEN session_token = $2 THEN 0 ELSE 1 END
-       LIMIT 1`,
-      [[browserToken, desktopToken].filter((token): token is string => Boolean(token)), browserToken],
-    );
-    const sessionToken = result.rows[0]?.session_token;
+    // When a desktop token is provided, use ONLY that token and ignore any browser cookie.
+    // This ensures the desktop app's authenticated user is the one accessing the admin portal,
+    // not a different user who may be logged into the browser.
+    let sessionToken: string | null = null;
+
+    if (desktopToken) {
+      // Desktop token provided: validate only the desktop token
+      const result = await client.query(
+        `SELECT session_token
+         FROM auth_sessions
+         WHERE session_token = $1 AND status = 'active' AND expires_at > NOW()
+         LIMIT 1`,
+        [desktopToken],
+      );
+      sessionToken = result.rows[0]?.session_token ?? null;
+    } else {
+      // No desktop token: fall back to browser cookie (backward compatibility)
+      const cookie = getCookieValue(request.headers.get('cookie'), authConfig.cookieName);
+      const browserToken = cookie?.startsWith('session:') ? cookie.slice('session:'.length) : null;
+      if (browserToken) {
+        const result = await client.query(
+          `SELECT session_token
+           FROM auth_sessions
+           WHERE session_token = $1 AND status = 'active' AND expires_at > NOW()
+           LIMIT 1`,
+          [browserToken],
+        );
+        sessionToken = result.rows[0]?.session_token ?? null;
+      }
+    }
+
     if (!sessionToken) return buildError('Session expired or invalid', 401);
 
     return redirectWithSessionCookie(new URL(returnTo, url.origin).toString(), sessionToken);
