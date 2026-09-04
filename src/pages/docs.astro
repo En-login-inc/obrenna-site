@@ -1,25 +1,16 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import PublicHeader from "../components/PublicHeader.astro";
-import Eyebrow from "../components/Eyebrow.astro";
 import Icon from "../components/Icon.astro";
-import CopyCodeButton from "../components/islands/CopyCodeButton";
+import PublicHeader from "../components/PublicHeader.astro";
+import { getAuthenticatedUser } from "../lib/portal-account";
+import { routes } from "../lib/routes";
 
-const installScript = `# Current developer/setup flow
-dev.ps1
-
-# Install the local browser dependency when needed
-cd backend
-python -m playwright install chromium
-
-# Pull example local models
-ollama pull qwen3.5-9b-claude-opus-reasoning-distilled
-ollama pull granite4.0-h-micro-3b
-ollama pull qwen3.5-0.8b`;
+const account = await getAuthenticatedUser(Astro.request);
 ---
 
 <BaseLayout title="Documentation | Obrenna" pageClass="docs-page">
-  <PublicHeader />
+  {!account && <PublicHeader />}
+  <!--
   <main class="docs-shell">
     <aside class="docs-sidebar">
       <div class="docs-search"><Icon name="search" size={14} /><span>Search documentation</span><kbd>⌘K</kbd></div>
@@ -81,6 +72,41 @@ ollama pull qwen3.5-0.8b`;
         <p>Public installer, enrollment and support workflows: NA.</p>
         <a>Troubleshooting is local-only</a>
       </div>
+    </aside>
+  </main>
+  -->
+  <main class="docs-shell docs-placeholder">
+    <aside class="docs-sidebar docs-placeholder-nav" aria-label="Documentation sections">
+      <div class="docs-search"><Icon name="search" size={14} /><span>Search documentation</span><kbd>⌘K</kbd></div>
+      <strong>GET STARTED</strong>
+      <span>Overview</span>
+      <span>Architecture</span>
+      <span>Network requirements</span>
+      <strong>FOR ADMINISTRATORS</strong>
+      <span>Deploy organization agent</span>
+      <span>Configure Ollama or vLLM</span>
+      <span>Connect an MCP server</span>
+      <strong>FOR EMPLOYEES</strong>
+      <span>Install desktop</span>
+      <span>Join an organization</span>
+      <span>Troubleshooting</span>
+    </aside>
+    <article class="docs-article">
+      <div class="docs-placeholder-content">
+        <p>Documentation not availabe yet. Coming soon...</p>
+        {account && (
+          <a class="button button-small" href={routes.admin}>
+            <Icon name="arrow-left" size={14} /> Back to admin portal
+          </a>
+        )}
+      </div>
+    </article>
+    <aside class="docs-toc docs-placeholder-nav" aria-label="Documentation page sections">
+      <strong>ON THIS PAGE</strong>
+      <span>Current architecture</span>
+      <span>Local setup</span>
+      <span>Connect a runtime</span>
+      <span>Remote endpoint boundary</span>
     </aside>
   </main>
 </BaseLayout>

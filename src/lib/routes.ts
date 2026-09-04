@@ -23,7 +23,6 @@ export const routes = {
 export const publicNav: Array<[string, string]> = [
   ["For organizations", routes.why],
   ["Security", routes.privacy],
-  ["Docs", routes.docs],
 ];
 
 export const adminNav: Array<[string, string, string]> = [
