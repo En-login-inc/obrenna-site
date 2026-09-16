@@ -53,6 +53,13 @@ export default function SignInForm() {
       <div className="auth-security">
         <ShieldCheck size={14} /> Protected with encrypted sessions and optional MFA.
       </div>
+    
+      <div className="auth-footer">
+        <span>Privacy</span>
+        <span>Security</span>
+        <span>Documentation</span>
+        <span>© 2026 Obrenna</span>
+      </div>
     </form>
   );
 }

@@ -1,6 +1,5 @@
 export const routes = {
   home: "/",
-  features: "/features",
   why: "/why-obrenna",
   privacy: "/privacy",
   download: "/download",
@@ -22,7 +21,6 @@ export const routes = {
 } as const;
 
 export const publicNav: Array<[string, string]> = [
-  ["Platform", routes.features],
   ["For organizations", routes.why],
   ["Security", routes.privacy],
   ["Docs", routes.docs],
