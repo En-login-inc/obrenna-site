@@ -2,12 +2,18 @@
 import Logo from "./Logo.astro";
 import Icon from "./Icon.astro";
 import { routes } from "../lib/routes";
+import { getAuthenticatedUser } from "../lib/portal-account";
 
 interface Props {
   invite?: boolean;
 }
 
 const { invite = false } = Astro.props;
+const user = await getAuthenticatedUser(Astro.request);
+
+if (!user) {
+  return Astro.redirect(`/sign-in?returnTo=${encodeURIComponent(`${Astro.url.pathname}${Astro.url.search}`)}`);
+}
 
 const createOrgSteps: Array<[string, string]> = [
   ["check-circle-2", "Organization"],
@@ -30,8 +36,8 @@ const steps = invite ? inviteSteps : createOrgSteps;
     <Logo light />
     <span>Secure organization setup</span>
     <div class="user-chip">
-      <span>DJ</span>
-      <div><b>Darian J.</b><small>darian@northstar.ai</small></div>
+      <span>{user.initials}</span>
+      <div><b>{user.fullName}</b><small>{user.email}</small></div>
       <Icon name="chevron-down" size={16} />
     </div>
   </header>

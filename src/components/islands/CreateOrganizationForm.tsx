@@ -1,18 +1,41 @@
 import { useState } from "react";
 import { ArrowRight, CheckCircle2, ShieldCheck } from "lucide-react";
 import { createOrganization } from "../../lib/api/organization";
+import { DesktopHandoff } from "./DesktopHandoff";
 
-export default function CreateOrganizationForm() {
+interface CreateOrganizationFormProps {
+  desktopCallback?: string;
+}
+
+export default function CreateOrganizationForm({ desktopCallback }: CreateOrganizationFormProps) {
   const [submitting, setSubmitting] = useState(false);
-  const [name, setName] = useState("Northstar Labs");
-  const [slug, setSlug] = useState("northstar-labs");
+  const [desktopHandoff, setDesktopHandoff] = useState(false);
+  const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
   const [region, setRegion] = useState<"Canada" | "United States" | "European Union">("Canada");
   const [orgType, setOrgType] = useState<"Business" | "Education" | "Government" | "Non-profit">("Business");
 
   async function handleCreate() {
     setSubmitting(true);
     const result = await createOrganization({ name, identifier: slug, region, orgType });
-    if (result.ok) window.location.href = "/portal/admin";
+    if (result.ok) {
+      if (desktopCallback) {
+        setDesktopHandoff(true);
+        const callbackUrl = `/api/auth/desktop-callback?desktop_callback=${encodeURIComponent(desktopCallback)}`;
+        window.setTimeout(() => {
+          window.location.href = callbackUrl;
+        }, 100);
+      } else {
+        window.location.href = "/portal/admin";
+      }
+    } else {
+      setSubmitting(false);
+      alert(result.error || "Could not create organization");
+    }
+  }
+
+  if (desktopHandoff) {
+    return <DesktopHandoff />;
   }
 
   return (
@@ -27,14 +50,14 @@ export default function CreateOrganizationForm() {
           <button type="button">Upload</button>
         </div>
         <label>
-          Organization name
-          <input value={name} onChange={(e) => setName(e.target.value)} />
+          <span>Organization name <span aria-hidden="true">*</span></span>
+          <input required value={name} onChange={(e) => setName(e.target.value)} />
         </label>
         <label>
-          Organization identifier
+          <span>Organization identifier <span aria-hidden="true">*</span></span>
           <div className="slug-field">
             <span>obrenna.com/</span>
-            <input value={slug} onChange={(e) => setSlug(e.target.value)} />
+            <input required value={slug} onChange={(e) => setSlug(e.target.value)} />
             <CheckCircle2 size={16} />
           </div>
           <small>Used in enrollment and sign-in. This can't be changed later.</small>

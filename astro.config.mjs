@@ -3,11 +3,13 @@ import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
+import node from '@astrojs/node';
 
-// https://astro.build/config
 export default defineConfig({
-  site: 'https://obreanna.app',
+  site: 'https://obrenna.app',
   integrations: [react(), sitemap()],
+  adapter: node({ mode: 'standalone' }),
+  output: 'server',
   vite: {
     plugins: [tailwindcss()],
   },

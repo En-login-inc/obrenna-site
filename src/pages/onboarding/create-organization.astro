@@ -2,6 +2,8 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import OnboardingShell from "../../components/OnboardingShell.astro";
 import CreateOrganizationForm from "../../components/islands/CreateOrganizationForm";
+
+const desktopCallback = Astro.url.searchParams.get('desktop_callback');
 ---
 
 <BaseLayout title="Create your organization | Obrenna">
@@ -12,7 +14,7 @@ import CreateOrganizationForm from "../../components/islands/CreateOrganizationF
         <h1>Create your organization</h1>
         <p>This becomes the secure home for your members, private machines, models and tool policies.</p>
       </div>
-      <CreateOrganizationForm client:load />
+      <CreateOrganizationForm client:load desktopCallback={desktopCallback || undefined} />
     </section>
   </OnboardingShell>
 </BaseLayout>
