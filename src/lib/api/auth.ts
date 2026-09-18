@@ -148,11 +148,6 @@ export async function signUp(payload: SignUpPayload): Promise<AuthResult> {
   }
 }
 
-export async function startSsoSignIn(): Promise<AuthResult> {
-  // Placeholder for SAML/OIDC flow
-  return { ok: false, redirectTo: '', error: 'SSO not yet implemented' };
-}
-
 /**
  * Navigate to the post-auth destination. The desktop handoff leaves the
  * browser window available for the user to close manually.

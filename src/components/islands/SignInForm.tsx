@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { ArrowRight, KeyRound, ChevronRight, ShieldCheck } from "lucide-react";
-import { signIn, startSsoSignIn, completeAuthRedirect } from "../../lib/api/auth";
+import { ArrowRight, ChevronRight, ShieldCheck } from "lucide-react";
+import { signIn, completeAuthRedirect } from "../../lib/api/auth";
 import { DesktopHandoff } from "./DesktopHandoff";
 
 interface SignInFormProps {
@@ -47,11 +47,6 @@ export default function SignInForm({ desktopCallback, currentUser }: SignInFormP
     }
   }
 
-  async function handleSso() {
-    const result = await startSsoSignIn();
-    if (result.ok) completeAuthRedirect(result);
-  }
-
   if (desktopHandoff) {
     return <DesktopHandoff />;
   }
@@ -65,7 +60,7 @@ export default function SignInForm({ desktopCallback, currentUser }: SignInFormP
           <p>{currentUser.email} is already signed in on this browser.</p>
         </div>
         <a className="button full-button" href={callbackUrl} onClick={handoffCurrentAccount}>Use this account <ArrowRight size={16} /></a>
-        <button className="sso-button" type="button" onClick={handleDifferentAccount}>
+        <button className="account-switch-button" type="button" onClick={handleDifferentAccount}>
           Use a different account <ChevronRight size={16} />
         </button>
       </div>
@@ -91,12 +86,6 @@ export default function SignInForm({ desktopCallback, currentUser }: SignInFormP
       </label>
       <button className="button full-button" type="submit" disabled={submitting}>
         {submitting ? "Signing in…" : "Sign in"} <ArrowRight size={16} />
-      </button>
-      <div className="auth-divider">
-        <span>or continue with SSO</span>
-      </div>
-      <button className="sso-button" type="button" onClick={handleSso}>
-        <KeyRound size={16} /> Organization SSO <ChevronRight size={16} />
       </button>
       <p className="auth-switch">
         New to Obrenna? <a href={desktopCallback ? `/sign-up?desktop_callback=${encodeURIComponent(desktopCallback)}` : "/sign-up"}>Create account</a>
