@@ -18,6 +18,7 @@ export const routes = {
   audit: "/portal/admin/audit",
   settings: "/portal/admin/settings",
   employee: "/portal/employee",
+  features: "/why-obrenna",
 } as const;
 
 export const publicNav: Array<[string, string]> = [
