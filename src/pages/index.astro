@@ -3,9 +3,9 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import PublicHeader from "../components/PublicHeader.astro";
 import PublicFooter from "../components/PublicFooter.astro";
 import TopologyBackground from "../components/TopologyBackground.astro";
-import ProductVisual from "../components/ProductVisual.astro";
-import Eyebrow from "../components/Eyebrow.astro";
-import IconBox from "../components/IconBox.astro";
+import HeroChat from "../components/HeroChat.astro";
+import Marquee from "../components/Marquee.astro";
+import PromoVideo from "../components/PromoVideo.astro";
 import Icon from "../components/Icon.astro";
 import { routes } from "../lib/routes";
 import { getPortalAccount } from "../lib/portal-account";
@@ -14,92 +14,174 @@ const account = await getPortalAccount(Astro.request);
 if (account) {
   return Astro.redirect(routes.admin);
 }
+
+const homeLimitations = [
+  "Local MCP executables are trusted software, not sandboxed code.",
+  "Schema approval verifies changes—not tool safety.",
+  "Core security—<i>VPNs, endpoints, backups, patching</i>—remains your responsibility.",
+  "Administrators control retention, telemetry and MCP configuration.",
+];
+
+const homeProof = [
+  { icon: "check", title: "Private by default", body: "No prompt or output storage by default" },
+  { icon: "square", title: "Runs where you work", body: "Use hardware and runtimes you control" },
+  { icon: "circle-dot", title: "Ready for every employee", body: "One governed desktop experience" },
+];
+
+const homePersonas = [
+  {
+    num: "1",
+    title: "For IT",
+    body: "Connect trusted infrastructure, set policies, and understand health without inspecting private work.",
+    label: "Explore platform",
+    href: routes.features,
+  },
+  {
+    num: "2",
+    title: "For builders",
+    body: "Bring in internal models and MCP tools with explicit review and approval points.",
+    label: "Read documentation",
+    href: routes.docs,
+  },
+  {
+    num: "3",
+    title: "For employees",
+    body: "Download, sign in, and start using your organization's approved AI workspace.",
+    label: "Get the desktop app",
+    href: routes.download,
+  },
+];
 ---
 
 <BaseLayout>
   <div class="public-page">
     <PublicHeader />
-    <main>
-      <section class="hero">
+    <main class="home">
+      <section class="home-hero">
         <TopologyBackground subtle />
-        <div class="container hero-inner">
+        <div class="home-wrap home-hero-row">
+          <div class="home-hero-copy">
             <h1>Put private AI<br />to work.</h1>
-          <p class="hero-sub">For your organization. On your infrastructure.</p>
-          <div class="hero-actions centered-actions">
-            <a class="button" href={routes.download}><Icon name="download" size={16} /> Download Obrenna</a>
-            <a class="button button-ghost" href={routes.contact}>Talk to sales <Icon name="arrow-right" size={16} /></a>
+            <p>For your organization. On your infrastructure. Models, files and tools stay inside the boundary you already control.</p>
+            <div class="home-hero-actions">
+              <a class="home-btn" href={routes.download}>Download Obrenna</a>
+              <a class="home-btn-ghost" href={routes.contact}>Talk to sales →</a>
+            </div>
           </div>
-        </div>
-        <div class="container">
-          <ProductVisual />
-        </div>
-        <div class="container hero-features">
-          <div><Icon name="check" size={18} /><div><strong>Private by default</strong><small>No prompt or output storage by default</small></div></div>
-          <div><Icon name="square" size={18} /><div><strong>Runs where you work</strong><small>Use hardware and runtimes you control</small></div></div>
-          <div><Icon name="circle-dot" size={18} /><div><strong>Ready for every employee</strong><small>One governed desktop experience</small></div></div>
+          <HeroChat />
         </div>
       </section>
 
-      <section class="light-section operating-section">
-        <div class="container">
-          <div class="section-heading split-heading">
-            <div><Eyebrow>THE OPERATING MODEL</Eyebrow><h2>One experience.<br />A clear boundary.</h2></div>
+      <Marquee />
+
+      <section class="home-proof">
+        <div class="home-proof-row">
+          {homeProof.map((item) => (
+            <div class="home-proof-item">
+              <Icon name={item.icon} size={18} strokeWidth={2.2} />
+              <div>
+                <strong>{item.title}</strong>
+                <small>{item.body}</small>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section class="home-model home-wrap-section">
+        <div class="home-wrap">
+          <div class="home-model-head">
+            <div class="home-model-head-left">
+              <h2>One experience.<br />A clear boundary.</h2>
+            </div>
             <p>Obrenna keeps the parts that govern access intentionally separate from the parts that process your organization's work.</p>
           </div>
-          <div class="operating-diagram">
-            <div class="operating-card control-card">
-              <span>OBRENNA</span>
+          <div class="home-model-diagram">
+            <div class="home-model-card home-model-control">
+              <span class="home-model-label">OBRENNA</span>
               <h3>Control plane</h3>
               <p>Identity, membership, approved policy and bounded service health.</p>
-              <div class="tag-row"><b>Identity</b><b>Policy</b><b>Audit</b></div>
+              <div class="home-model-tags">
+                <span>Identity</span><span>Policy</span><span>Audit</span>
+              </div>
             </div>
-            <div class="operating-link">
+            <div class="home-model-link">
               <span>Approved configuration</span>
-              <i></i>
+              <span class="home-model-link-rule"></span>
               <span>Health metadata only</span>
             </div>
-            <div class="operating-card data-card">
-              <span>YOUR ORGANIZATION</span>
+            <div class="home-model-card home-model-data">
+              <span class="home-model-label">YOUR ORGANIZATION</span>
               <h3>Private data plane</h3>
               <p>Models, files, prompts, MCP tools and their results stay where your team operates them.</p>
-              <div class="tag-row"><b>Models</b><b>Tools</b><b>Data</b></div>
+              <div class="home-model-tags">
+                <span>Models</span><span>Tools</span><span>Data</span>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section class="dark-section designed-section">
-        <div class="container">
-          <div class="section-heading centered"><Eyebrow>DESIGNED TO ADOPT</Eyebrow><h2>Private AI without the private-AI friction.</h2><p>Give every role the right level of control without turning everyone into an infrastructure expert.</p></div>
-          <div class="persona-grid">
-            <article>
-              <IconBox icon="shield" />
-              <h3>For IT</h3>
-              <p>Connect trusted infrastructure, set policies, and understand health without inspecting private work.</p>
-              <a href={routes.features}>Explore platform <Icon name="arrow-right" size={13} /></a>
-            </article>
-            <article>
-              <IconBox icon="command" />
-              <h3>For builders</h3>
-              <p>Bring in internal models and MCP tools with explicit review and approval points.</p>
-              <a href={routes.docs}>Read documentation <Icon name="arrow-right" size={13} /></a>
-            </article>
-            <article>
-              <IconBox icon="laptop" />
-              <h3>For employees</h3>
-              <p>Download, sign in, and start using your organization's approved AI workspace.</p>
-              <a href={routes.download}>Get the desktop app <Icon name="arrow-right" size={13} /></a>
-            </article>
+      <section class="home-limits home-wrap-section">
+        <div class="home-wrap home-limits-row">
+          <div class="home-limits-left">
+            <h2>Clear limits. <br />No absolute claims.</h2>
+            <p>Private AI can only be as secure as the systems it runs on. Obrenna provides controls; your organization remains responsible for its environment.</p>
+          </div>
+          <div class="home-limits-right">
+            {homeLimitations.map((x) => (
+              <div>
+                <Icon name="triangle-alert" size={18} strokeWidth={1.6} />
+                <span set:html={x} />
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      <section class="cta-section cta-teal">
-        <div class="container cta-inner">
-          <div><Eyebrow>BUILD ON YOUR TERMS</Eyebrow><h2>Useful AI that stays within your organization's control.</h2></div>
-          <div>
-            <a class="button button-dark" href={routes.contact}>Start a conversation <Icon name="arrow-right" /></a>
-            <a class="text-link-dark" href={routes.docs}>Explore documentation <Icon name="arrow-right" size={15} /></a>
+      <section class="home-film home-wrap-section">
+        <PromoVideo caption="PRODUCT SHOT — DESKTOP WORKSPACE" />
+      </section>
+
+      <section class="home-boundary home-wrap-section">
+        <div class="home-boundary-card">
+          <span class="home-boundary-badge"><Icon name="shield-check" size={24} strokeWidth={1.6} /></span>
+          <div class="home-boundary-inner">
+            <div class="home-boundary-eyebrow">The non-negotiable boundary</div>
+            <p>Your prompts, files, model outputs, MCP arguments and tool results remain in your organization's environment by default.</p>
+          </div>
+          <a class="home-boundary-cta" href={routes.privacy}>Review the data model →</a>
+        </div>
+      </section>
+
+      <section class="home-personas home-wrap-section">
+        <div class="home-wrap">
+          <div class="home-personas-head">
+            <h2>Private AI without the private-AI friction.</h2>
+            <p>Give every role the right level of control without turning everyone into an infrastructure expert.</p>
+          </div>
+          <div class="home-personas-rows">
+            {homePersonas.map((persona) => (
+              <div class="home-personas-row">
+                <span class="home-personas-num">{persona.num}</span>
+                <h3 class="home-personas-title">{persona.title}</h3>
+                <p class="home-personas-body">{persona.body}</p>
+                <a class="home-personas-link" href={persona.href}>{persona.label} →</a>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section class="home-cta home-wrap-section">
+        <div class="home-wrap home-cta-inner">
+          <div class="home-cta-left">
+            <div class="home-cta-eyebrow">BUILD ON YOUR TERMS</div>
+            <h2>Useful AI that stays within your organization's control.</h2>
+          </div>
+          <div class="home-cta-right">
+            <a class="home-cta-btn" href={routes.contact}>Start a conversation →</a>
+            <a class="home-cta-link" href={routes.docs}>Explore documentation →</a>
           </div>
         </div>
       </section>
