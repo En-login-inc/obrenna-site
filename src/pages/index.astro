@@ -3,9 +3,6 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import PublicHeader from "../components/PublicHeader.astro";
 import PublicFooter from "../components/PublicFooter.astro";
 import TopologyBackground from "../components/TopologyBackground.astro";
-import HeroChat from "../components/HeroChat.astro";
-import Marquee from "../components/Marquee.astro";
-import PromoVideo from "../components/PromoVideo.astro";
 import Icon from "../components/Icon.astro";
 import { routes } from "../lib/routes";
 import { getPortalAccount } from "../lib/portal-account";
@@ -68,11 +65,20 @@ const homePersonas = [
               <a class="home-btn-ghost" href={routes.contact}>Talk to sales →</a>
             </div>
           </div>
-          <HeroChat />
+          <div class="home-hero-video">
+            <video
+              src="/media/hero-demo.mp4"
+              poster="/media/hero-demo-poster.jpg"
+              autoplay
+              muted
+              loop
+              playsinline
+              preload="auto"
+              aria-label="Obrenna turning a vendor renewals file into a dashboard"
+            />
+          </div>
         </div>
       </section>
-
-      <Marquee />
 
       <section class="home-proof">
         <div class="home-proof-row">
@@ -139,10 +145,6 @@ const homePersonas = [
         </div>
       </section>
 
-      <section class="home-film home-wrap-section">
-        <PromoVideo caption="PRODUCT SHOT — DESKTOP WORKSPACE" />
-      </section>
-
       <section class="home-boundary home-wrap-section">
         <div class="home-boundary-card">
           <span class="home-boundary-badge"><Icon name="shield-check" size={24} strokeWidth={1.6} /></span>
@@ -189,3 +191,15 @@ const homePersonas = [
     <PublicFooter />
   </div>
 </BaseLayout>
+
+<script>
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduceMotion) {
+    document.querySelectorAll<HTMLVideoElement>(".home-hero-video video").forEach((video) => {
+      video.removeAttribute("autoplay");
+      video.removeAttribute("loop");
+      video.setAttribute("controls", "");
+      video.pause();
+    });
+  }
+</script>
