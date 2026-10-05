@@ -86,6 +86,12 @@ short-lived install JWT to authorize downloads of the installer and source
 archive through a private GitHub proxy. Local-checkout development installs do
 not require this GitHub credential.
 
+For local development, add the token to the untracked `obrenna-site/.env.local`
+file and restart `npm run dev`. If the install command's first
+`Invoke-WebRequest` returns HTTP 503, verify that this setting is present in
+the running site's environment; the API returns 503 when the private-repository
+credential is missing.
+
 Organization owners/admins can create a platform-specific install command from
 **Portal → Machines**. The command installs the server runtime and Ollama,
 starts Ollama and Obrenna-Server, then opens or prints a short-lived approval

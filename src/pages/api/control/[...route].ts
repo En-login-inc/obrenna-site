@@ -131,9 +131,11 @@ function validateGuardrails(body: Record<string, unknown>) {
 }
 
 async function fetchPrivateServerAsset(path: string, accept = 'application/vnd.github+json') {
-  const token = process.env.OBRENNA_SERVER_GITHUB_TOKEN;
+  const token = process.env.OBRENNA_SERVER_GITHUB_TOKEN || import.meta.env.OBRENNA_SERVER_GITHUB_TOKEN;
   if (!token) throw new Error('OBRENNA_SERVER_GITHUB_TOKEN is not configured');
-  const repository = process.env.OBRENNA_SERVER_GITHUB_REPOSITORY ?? 'En-login-inc/Obrenna-Server';
+  const repository = process.env.OBRENNA_SERVER_GITHUB_REPOSITORY
+    || import.meta.env.OBRENNA_SERVER_GITHUB_REPOSITORY
+    || 'En-login-inc/Obrenna-Server';
   if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)) {
     throw new Error('OBRENNA_SERVER_GITHUB_REPOSITORY must be owner/repository');
   }
@@ -159,6 +161,12 @@ async function fetchPrivateServerAsset(path: string, accept = 'application/vnd.g
   }
   if (!response.ok) throw new Error(`Private repository download failed (${response.status})`);
   return response;
+}
+
+function privateServerRef() {
+  return process.env.OBRENNA_SERVER_GITHUB_REF
+    || import.meta.env.OBRENNA_SERVER_GITHUB_REF
+    || 'main';
 }
 
 async function authorizeInstallDownload(request: Request) {
@@ -206,7 +214,7 @@ const handlers: Record<string, Partial<Record<'GET' | 'POST' | 'PATCH', Handler>
         if (format === 'windows-script' || format === 'macos-script' || format === 'linux-script') {
           const platform = format.slice(0, format.indexOf('-'));
           const asset = await fetchPrivateServerAsset(
-            `contents/scripts/install-${platform === 'windows' ? 'ps1' : `${platform}.sh`}?ref=${encodeURIComponent(process.env.OBRENNA_SERVER_GITHUB_REF ?? 'main')}`,
+            `contents/scripts/install-${platform === 'windows' ? 'ps1' : `${platform}.sh`}?ref=${encodeURIComponent(privateServerRef())}`,
           );
           const body = await asset.json() as { type?: unknown; encoding?: unknown; content?: unknown };
           if (body.type !== 'file' || body.encoding !== 'base64' || typeof body.content !== 'string') {
@@ -223,7 +231,7 @@ const handlers: Record<string, Partial<Record<'GET' | 'POST' | 'PATCH', Handler>
         if (format === 'source-zip' || format === 'source-tar-gz') {
           const archiveType = format === 'source-zip' ? 'zipball' : 'tarball';
           const archive = await fetchPrivateServerAsset(
-            `${archiveType}/${encodeURIComponent(process.env.OBRENNA_SERVER_GITHUB_REF ?? 'main')}`,
+            `${archiveType}/${encodeURIComponent(privateServerRef())}`,
             'application/vnd.github+json',
           );
           if (!archive.body) throw new Error('GitHub returned an empty private repository archive');
@@ -244,7 +252,7 @@ const handlers: Record<string, Partial<Record<'GET' | 'POST' | 'PATCH', Handler>
         }
         if (error instanceof Error && error.message.includes('OBRENNA_SERVER_GITHUB_TOKEN')) {
           console.error(error.message);
-          return buildError('Private server downloads are not configured. Contact the Obrenna site administrator.', 503);
+          return buildError('The Obrenna site is missing its private-repository download credential (OBRENNA_SERVER_GITHUB_TOKEN).', 503);
         }
         console.error('Private Obrenna-Server download failed', error);
         return buildError('Could not download the private Obrenna-Server installer source', 502);
