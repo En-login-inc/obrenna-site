@@ -589,6 +589,13 @@ svg { flex: 0 0 auto; }
 .one-time-secret { display:flex; flex-direction:column; align-items:flex-start; gap:10px; padding:20px; border-color:#b7d8d2; }
 .one-time-secret label { display:flex; flex-direction:column; gap:6px; width:min(100%,700px); font-size:11px; font-weight:600; }
 .one-time-secret input,.one-time-secret textarea { width:100%; border:1px solid #d5ddda; border-radius:8px; padding:10px 12px; font-family:monospace; font-size:11px; }
+.host-pairing-prompt { gap:12px; padding:24px; border:2px solid #d18b18; border-left-width:8px; background:linear-gradient(115deg,#fff8e8 0%,#fff 74%); box-shadow:0 12px 36px rgba(108,75,15,.14); }
+.host-pairing-prompt h2 { margin:0; color:#36280d; font-size:20px; }
+.host-pairing-prompt p { margin:0; max-width:720px; color:#594b2f; font-size:14px; line-height:1.6; }
+.host-pairing-label { padding:5px 9px; border-radius:999px; background:#ffebbd; color:#694400; font-size:11px; font-weight:750; letter-spacing:.04em; text-transform:uppercase; }
+.host-pairing-button { min-height:50px; padding:0 24px; background:#9a5b00; border-color:#9a5b00; color:#fff; font-size:15px; box-shadow:0 4px 0 #693e00,0 10px 24px rgba(105,62,0,.2); }
+.host-pairing-button:hover { background:#754300; border-color:#754300; }
+.host-pairing-button:focus-visible { outline:3px solid #173f40; outline-offset:4px; }
 .machine-status.pending { color:#9a6700; }
 .machine-admin-heading { display:flex; align-items:center; justify-content:space-between; }
 .machine-empty { padding:18px; color:#74817e; font-size:13px; }

@@ -193,10 +193,11 @@ export default function MachineAdminPanel() {
   return (
     <div className="machine-admin">
       {pairingToken && (
-        <section className="one-time-secret portal-card" aria-live="polite">
-          <h2>Approve this Ollama host</h2>
-          <p>This one-time link will connect the pending server to the currently selected organization. Only approve it if you started this installation.</p>
-          <button className="button" type="button" onClick={() => void approveHostPairing()} disabled={pairingBusy}>
+        <section className="host-pairing-prompt portal-card" aria-live="polite" aria-labelledby="host-pairing-title">
+          <span className="host-pairing-label">Action required · New server</span>
+          <h2 id="host-pairing-title">Approve and link this Ollama host</h2>
+          <p>This one-time request connects the pending server to the currently selected organization. Only approve it if you started this installation.</p>
+          <button className="button host-pairing-button" type="button" onClick={() => void approveHostPairing()} disabled={pairingBusy}>
             {pairingBusy ? "Linking host…" : "Approve and link host"}
           </button>
         </section>
