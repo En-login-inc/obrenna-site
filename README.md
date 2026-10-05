@@ -58,9 +58,58 @@ Auth database ready: postgresql://obrenna:obrenna@localhost:5432/obrenna-server-
 | `billing_events` | Provider webhook audit log |
 | `auth_sessions` | Active sessions and expiry |
 | `desktop_auth_devices` | Registered desktop clients |
+| `inference_guardrails` | Per-organization Ollama request policy and revision |
+| `inference_hosts` | Registered model hosts and outbound heartbeat |
+| `inference_clients` | Individually enrolled, revocable Obrenna computers |
+| `inference_enrollment_codes` | Hashed, single-use 15-minute enrollment codes |
 
 Application data (chat history, artifacts) is **never** stored here — that stays in
 the desktop app's local SQLite database.
+
+### Ollama host and inference guardrails
+
+Set `INFERENCE_PAIRING_JWT_SECRET` (or the existing `MACHINE_PAIRING_SECRET`)
+in the site environment to a unique, cryptographically random value of at
+least 32 bytes before using managed host installation. For example, generate
+one with `openssl rand -base64 48`. Do not reuse an example value or commit a
+real secret. The site uses this secret to sign short-lived, one-use installer
+and host-pairing JWTs.
+
+For platform installs, configure `OBRENNA_SERVER_GITHUB_TOKEN` in the **site
+server's** environment with a GitHub fine-grained personal access token that
+has access only to the private `Obrenna-Server` repository and **Contents:
+Read-only** permission. Also set `OBRENNA_SERVER_GITHUB_REPOSITORY` and
+`OBRENNA_SERVER_GITHUB_REF` if the repository or install branch differs from
+the defaults. Keep this credential on the server; never put it in `.env` files
+committed to source, browser code, or generated commands. The site uses each
+short-lived install JWT to authorize downloads of the installer and source
+archive through a private GitHub proxy. Local-checkout development installs do
+not require this GitHub credential.
+
+Organization owners/admins can create a platform-specific install command from
+**Portal → Machines**. The command installs the server runtime and Ollama,
+starts Ollama and Obrenna-Server, then opens or prints a short-lived approval
+link. After an owner/admin signs in and approves the host, it is linked to the
+organization and receives policy on its next outbound sync. No inbound internet
+connection to the LAN is needed. The installer does not pull a model; choose
+one that suits the host, then allow its exact model ID in **Portal → LLM
+guardrails**.
+
+The installer command expires after 15 minutes and can bootstrap one host. The
+approval link is single-use and expires after 30 minutes. Ongoing host sync
+uses a separate random host credential stored locally on the host, not the
+pairing JWT. Do not share the generated command or approval link.
+
+Generate a one-time client code and redeem it in the Obrenna desktop app under
+**Settings → Engine → Remote → Connect to an Obrenna model host**. Each client
+gets its own revocable credential. Use **Portal → LLM guardrails** to allow exact
+Ollama model IDs, cap per-client request rate and text size, reject configured
+literal terms, and enable common sensitive-data pattern checks. Policies fail
+closed until a model is explicitly allowed. Apply schema updates by re-running
+`npm run setup:auth-db`.
+
+See [the Obrenna-Server README](../Obrenna-Server/README.md) for host setup and
+the limits of the built-in sensitive-data checks.
 
 ### Useful database commands
 
@@ -91,10 +140,15 @@ cp .env.example .env.local
 | `AUTH_SESSION_TTL_DAYS` | `30` | Session lifetime |
 | `ALLOW_BILLING_ONLY_SYNC` | `true` | Restricts desktop sync to billing/identity data |
 | `SITE_API_BASE_URL` | `http://localhost:4321` | Base URL used by the desktop client |
+| `INFERENCE_PAIRING_JWT_SECRET` or `MACHINE_PAIRING_SECRET` | required for managed host installation | Random secret of at least 32 bytes used to sign one-time server installation and pairing JWTs |
+| `OBRENNA_SERVER_GITHUB_TOKEN` | required for platform installs | Server-side fine-grained GitHub token with read-only Contents access to the private Obrenna-Server repository |
+| `OBRENNA_SERVER_GITHUB_REPOSITORY` | `En-login-inc/Obrenna-Server` | Private repository used for authenticated installer and source downloads |
+| `OBRENNA_SERVER_GITHUB_REF` | `main` | Branch, tag, or commit ref to install |
 | `APP_ENV` | `development` | Environment marker |
 
 The defaults work out of the box against the Dockerized database, so `.env.local`
-is optional for local development.
+is optional for local development. After changing `.env.local`, restart the
+Astro dev server so server routes pick up the updated environment.
 
 ## 3. Run the site
 

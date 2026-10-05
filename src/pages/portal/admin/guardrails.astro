@@ -1,0 +1,11 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import AdminShell from "../../../components/AdminShell.astro";
+import GuardrailsPanel from "../../../components/islands/GuardrailsPanel";
+---
+
+<BaseLayout title="LLM guardrails | Obrenna">
+  <AdminShell title="LLM guardrails" eyebrow="INFERENCE GOVERNANCE">
+    <GuardrailsPanel client:load />
+  </AdminShell>
+</BaseLayout>
