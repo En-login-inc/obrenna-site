@@ -96,6 +96,73 @@ CREATE TABLE IF NOT EXISTS desktop_auth_devices (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS inference_guardrails (
+    organization_id UUID PRIMARY KEY REFERENCES organizations(id) ON DELETE CASCADE,
+    revision INTEGER NOT NULL DEFAULT 1,
+    allowed_models JSONB NOT NULL DEFAULT '[]'::jsonb,
+    requests_per_minute INTEGER NOT NULL DEFAULT 30,
+    max_input_chars INTEGER NOT NULL DEFAULT 100000,
+    max_output_chars INTEGER NOT NULL DEFAULT 20000,
+    blocked_terms JSONB NOT NULL DEFAULT '[]'::jsonb,
+    detect_sensitive_data BOOLEAN NOT NULL DEFAULT TRUE,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS inference_hosts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    display_name VARCHAR(120) NOT NULL,
+    token_hash CHAR(64) NOT NULL UNIQUE,
+    paired_at TIMESTAMPTZ,
+    pairing_token_hash CHAR(64),
+    pairing_expires_at TIMESTAMPTZ,
+    available_models JSONB NOT NULL DEFAULT '[]'::jsonb,
+    last_seen_at TIMESTAMPTZ,
+    revoked_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE inference_hosts ADD COLUMN IF NOT EXISTS paired_at TIMESTAMPTZ;
+ALTER TABLE inference_hosts ADD COLUMN IF NOT EXISTS pairing_token_hash CHAR(64);
+ALTER TABLE inference_hosts ADD COLUMN IF NOT EXISTS pairing_expires_at TIMESTAMPTZ;
+UPDATE inference_hosts
+SET paired_at = created_at
+WHERE paired_at IS NULL AND pairing_token_hash IS NULL;
+
+CREATE TABLE IF NOT EXISTS inference_install_tokens (
+    jti_hash CHAR(64) PRIMARY KEY,
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    expires_at TIMESTAMPTZ NOT NULL,
+    used_at TIMESTAMPTZ,
+    host_id UUID REFERENCES inference_hosts(id) ON DELETE SET NULL,
+    pairing_jti VARCHAR(64),
+    pairing_expires_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS inference_enrollment_codes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    code_hash CHAR(64) NOT NULL UNIQUE,
+    expires_at TIMESTAMPTZ NOT NULL,
+    used_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS inference_clients (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    host_id UUID NOT NULL REFERENCES inference_hosts(id) ON DELETE CASCADE,
+    display_name VARCHAR(120) NOT NULL,
+    hostname VARCHAR(255) NOT NULL,
+    os VARCHAR(120) NOT NULL,
+    token_hash CHAR(64) NOT NULL UNIQUE,
+    last_seen_at TIMESTAMPTZ,
+    revoked_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_organization_memberships_user ON organization_memberships(user_id);
 CREATE INDEX IF NOT EXISTS idx_organization_memberships_org ON organization_memberships(organization_id);
@@ -103,6 +170,11 @@ CREATE INDEX IF NOT EXISTS idx_auth_sessions_user ON auth_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_auth_sessions_expires_at ON auth_sessions(expires_at);
 CREATE INDEX IF NOT EXISTS idx_billing_events_org ON billing_events(organization_id);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_org ON subscriptions(organization_id);
+CREATE INDEX IF NOT EXISTS idx_inference_hosts_org ON inference_hosts(organization_id);
+CREATE INDEX IF NOT EXISTS idx_inference_install_tokens_org ON inference_install_tokens(organization_id);
+CREATE INDEX IF NOT EXISTS idx_inference_clients_org ON inference_clients(organization_id);
+CREATE INDEX IF NOT EXISTS idx_inference_clients_host ON inference_clients(host_id);
+CREATE INDEX IF NOT EXISTS idx_inference_enrollment_codes_org ON inference_enrollment_codes(organization_id);
 
 INSERT INTO plans (code, name, price_cents, currency, interval, features)
 VALUES

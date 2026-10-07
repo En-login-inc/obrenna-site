@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import AdminShell from "../../../components/AdminShell.astro";
+import MachineAdminPanel from "../../../components/islands/MachineAdminPanel";
 import OrganizationMachines from "../../../components/islands/OrganizationMachines";
 import OrganizationFleet from "../../../components/islands/OrganizationFleet";
 import { getPortalAccount } from "../../../lib/portal-account";
@@ -10,10 +11,13 @@ if (!account) return Astro.redirect(`/sign-in?returnTo=${encodeURIComponent(Astr
 if (!['owner', 'admin'].includes(account.organization.role.toLowerCase())) {
   return Astro.redirect('/portal/employee');
 }
+Astro.response.headers.set("Cache-Control", "no-store");
+Astro.response.headers.set("Referrer-Policy", "no-referrer");
 ---
 
 <BaseLayout title="Organization machines | Obrenna">
   <AdminShell title="Organization machines" eyebrow="INFRASTRUCTURE">
+    <MachineAdminPanel client:load />
     <OrganizationFleet client:load />
     <OrganizationMachines organizationId={account.organization.id} client:load />
   </AdminShell>
