@@ -4,12 +4,13 @@ import { submitContactRequest } from "../../lib/api/contact";
 
 export default function ContactForm() {
   const [status, setStatus] = useState<"idle" | "submitting" | "sent">("idle");
+  const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setStatus("submitting");
     const form = new FormData(e.currentTarget);
-    await submitContactRequest({
+    const result = await submitContactRequest({
       workEmail: String(form.get("workEmail") ?? ""),
       firstName: String(form.get("firstName") ?? ""),
       lastName: String(form.get("lastName") ?? ""),
@@ -17,7 +18,11 @@ export default function ContactForm() {
       teamSize: String(form.get("teamSize") ?? ""),
       message: String(form.get("message") ?? ""),
     });
-    setStatus("sent");
+    if (result.ok) setStatus("sent");
+    else {
+      setError(result.message);
+      setStatus("idle");
+    }
   }
 
   if (status === "sent") {
@@ -37,6 +42,7 @@ export default function ContactForm() {
         <h2>Request a conversation</h2>
         <p>We'll reply within one business day.</p>
       </div>
+      {error && <p className="admin-action-error" role="status">{error}</p>}
       <label>
         Work email
         <input name="workEmail" placeholder="you@company.com" type="email" required />

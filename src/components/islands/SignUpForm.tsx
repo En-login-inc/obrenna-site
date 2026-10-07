@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ArrowRight, KeyRound, ChevronRight, Check, ShieldCheck } from "lucide-react";
-import { signUp, startSsoSignIn, completeAuthRedirect } from "../../lib/api/auth";
+import { signUp, startSsoSignIn, completeAuthRedirect, getDesktopContinuationQuery } from "../../lib/api/auth";
 import { DesktopHandoff } from "./DesktopHandoff";
 
 interface SignUpFormProps {
@@ -72,7 +72,7 @@ export default function SignUpForm({ desktopCallback }: SignUpFormProps) {
         <KeyRound size={16} /> Organization SSO <ChevronRight size={16} />
       </button>
       <p className="auth-switch">
-        Already have an account? <a href={desktopCallback ? `/sign-in?desktop_callback=${encodeURIComponent(desktopCallback)}` : "/sign-in"}>Sign in</a>
+        Already have an account? <a href={desktopCallback ? `/sign-in?${getDesktopContinuationQuery(desktopCallback)}` : "/sign-in"}>Sign in</a>
       </p>
       <div className="auth-security">
         <ShieldCheck size={14} /> Protected with encrypted sessions and optional MFA.

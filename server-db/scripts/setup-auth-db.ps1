@@ -7,6 +7,7 @@ $ErrorActionPreference = 'Stop'
 
 # Paths resolve from the script location, not the caller's working directory.
 $DbDir = Split-Path -Parent $PSScriptRoot
+$SiteRoot = Split-Path -Parent $DbDir
 $ComposeFile = Join-Path $DbDir 'docker-compose.auth.yml'
 $SchemaFile = Join-Path $DbDir 'auth-schema-postgres.sql'
 $Service = 'postgres-auth'
@@ -44,6 +45,16 @@ if (-not $ready) {
 Write-Host 'Applying schema...'
 Get-Content -Raw $SchemaFile | & docker @Compose exec -T $Service psql -v ON_ERROR_STOP=1 -U $DbUser -d $DbName
 if ($LASTEXITCODE -ne 0) { throw 'Schema load failed.' }
+
+Write-Host 'Applying pending tracked migrations...'
+Push-Location $SiteRoot
+try {
+    & node ./scripts/migrate-auth-db.mjs
+    if ($LASTEXITCODE -ne 0) { throw 'Auth database migrations failed.' }
+}
+finally {
+    Pop-Location
+}
 
 Write-Host 'Tables:'
 & docker @Compose exec -T $Service psql -U $DbUser -d $DbName -c '\dt'

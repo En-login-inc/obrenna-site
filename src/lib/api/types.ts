@@ -1,0 +1,1 @@
+export type StatusTone = 'good' | 'warn' | 'bad' | 'neutral' | 'teal';

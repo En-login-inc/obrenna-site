@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ArrowRight, CheckCircle2, ShieldCheck } from "lucide-react";
 import { createOrganization } from "../../lib/api/organization";
+import { getDesktopCallbackEndpointUrl } from "../../lib/api/auth";
 import { DesktopHandoff } from "./DesktopHandoff";
 
 interface CreateOrganizationFormProps {
@@ -21,7 +22,7 @@ export default function CreateOrganizationForm({ desktopCallback }: CreateOrgani
     if (result.ok) {
       if (desktopCallback) {
         setDesktopHandoff(true);
-        const callbackUrl = `/api/auth/desktop-callback?desktop_callback=${encodeURIComponent(desktopCallback)}`;
+        const callbackUrl = getDesktopCallbackEndpointUrl(desktopCallback);
         window.setTimeout(() => {
           window.location.href = callbackUrl;
         }, 100);
@@ -30,7 +31,7 @@ export default function CreateOrganizationForm({ desktopCallback }: CreateOrgani
       }
     } else {
       setSubmitting(false);
-      alert(result.error || "Could not create organization");
+      alert(result.message || "Could not create organization");
     }
   }
 

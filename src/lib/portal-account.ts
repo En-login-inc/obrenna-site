@@ -52,7 +52,7 @@ export async function getAuthenticatedUser(request: Request): Promise<Authentica
     const result = await client.query(
       `SELECT u.id, u.email, u.full_name
        FROM auth_sessions s
-       JOIN users u ON u.id = s.user_id
+       JOIN users u ON u.id = s.user_id AND u.status = 'active'
        WHERE s.session_token = $1 AND s.status = 'active' AND s.expires_at > NOW()
        LIMIT 1`,
       [sessionToken],
@@ -79,7 +79,7 @@ export async function getPortalAccount(request: Request): Promise<PortalAccount 
       `SELECT u.id AS user_id, u.email, u.full_name,
               o.id AS organization_id, o.name AS organization_name, om.role
        FROM auth_sessions s
-       JOIN users u ON u.id = s.user_id
+       JOIN users u ON u.id = s.user_id AND u.status = 'active'
        JOIN organization_memberships om ON om.user_id = u.id AND om.status = 'active'
        JOIN organizations o ON o.id = om.organization_id AND o.status = 'active'
        WHERE s.session_token = $1 AND s.status = 'active' AND s.expires_at > NOW()
