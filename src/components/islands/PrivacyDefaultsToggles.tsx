@@ -2,17 +2,28 @@ import { useState } from "react";
 import type { PrivacyDefaults } from "../../lib/api/settings";
 import { updatePrivacyDefaults } from "../../lib/api/settings";
 
-export default function PrivacyDefaultsToggles({ initial }: { initial: PrivacyDefaults }) {
-  const [defaults, setDefaults] = useState(initial);
+export default function PrivacyDefaultsToggles({ initial }: { initial?: Partial<PrivacyDefaults> }) {
+  const [defaults, setDefaults] = useState<PrivacyDefaults>({
+    promptTelemetryEnabled: initial?.promptTelemetryEnabled ?? false,
+    redactedLifecycleTelemetryEnabled: initial?.redactedLifecycleTelemetryEnabled ?? true,
+    optionalDiagnosticsEnabled: initial?.optionalDiagnosticsEnabled ?? false,
+  });
+  const [message, setMessage] = useState("");
 
   async function toggle(key: keyof PrivacyDefaults) {
     const next = { ...defaults, [key]: !defaults[key] };
-    setDefaults(next);
-    await updatePrivacyDefaults({ [key]: next[key] });
+    const result = await updatePrivacyDefaults({ [key]: next[key] });
+    if (result.ok) {
+      setDefaults(next);
+      setMessage("");
+    } else {
+      setMessage(result.message);
+    }
   }
 
   return (
     <>
+      {message && <p className="admin-action-unavailable" role="status">{message}</p>}
       <div className="setting-toggle">
         <span>
           <b>Prompt and response telemetry</b>

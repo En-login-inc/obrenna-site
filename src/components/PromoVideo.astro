@@ -1,0 +1,48 @@
+---
+/**
+ * Reusable promo-video slot. Renders a striped placeholder until a `src`
+ * is provided, then swaps in a looping muted video filling the same frame.
+ */
+interface Props {
+  src?: string;
+  poster?: string;
+  caption?: string;
+  height?: string;
+}
+
+const { src, poster, caption = "PRODUCT SHOT — DESKTOP WORKSPACE", height = "70vh" } = Astro.props;
+---
+
+<div class="home-film-frame">
+  {src ? (
+    <video
+      class="home-film-video"
+      style={`height: ${height}`}
+      autoplay
+      muted
+      loop
+      playsinline
+      preload="metadata"
+      poster={poster}
+      src={src}
+    />
+  ) : (
+    <div class="home-film-placeholder" style={`height: ${height}`}>
+      <span>[ {caption} ]</span>
+    </div>
+  )}
+</div>
+
+{src && (
+  <script>
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) {
+      document.querySelectorAll<HTMLVideoElement>(".home-film-video").forEach((video) => {
+        video.removeAttribute("autoplay");
+        video.removeAttribute("loop");
+        video.setAttribute("controls", "");
+        video.pause();
+      });
+    }
+  </script>
+)}

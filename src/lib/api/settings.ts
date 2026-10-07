@@ -1,6 +1,13 @@
+﻿import { readJson, mutation } from './portal-client';
+import type { MutationResult } from './mutation-result';
+
 export interface OrganizationProfile {
-  name: string;
-  identifier: string;
+  id: string;
+  slug: string;
+  display_name: string;
+  config_revision: number;
+  prompt_telemetry_enabled: boolean;
+  created_at: string;
 }
 
 export interface PrivacyDefaults {
@@ -9,32 +16,34 @@ export interface PrivacyDefaults {
   optionalDiagnosticsEnabled: boolean;
 }
 
-// TODO(backend): Replace with a real query (e.g. GET /api/organizations/:id/settings) reading
-// the organization profile record from the control plane.
 export async function getOrganizationProfile(): Promise<OrganizationProfile> {
-  return { name: "Northstar Labs", identifier: "northstar-labs" };
+  const body = await readJson<{ ok: true; organization: OrganizationProfile }>('/api/portal/settings', { method: 'GET' }, 'Could not load organization settings');
+  return body.organization;
 }
 
-// TODO(backend): Replace with a real mutation (e.g. PATCH /api/organizations/:id) that updates
-// the display name. The identifier field is immutable by design (used in enrollment/sign-in
-// URLs) and must stay read-only server-side regardless of client input.
-export async function updateOrganizationProfile(_input: { name: string }): Promise<{ ok: boolean }> {
-  return { ok: true };
-}
-
-// TODO(backend): Replace with a real query reading the organization's default privacy/telemetry
-// configuration, applied to new environments unless explicitly overridden per-environment.
 export async function getPrivacyDefaults(): Promise<PrivacyDefaults> {
+  const profile = await getOrganizationProfile();
   return {
-    promptTelemetryEnabled: false,
+    promptTelemetryEnabled: profile.prompt_telemetry_enabled,
+    // The control plane tracks prompt telemetry; other defaults are not
+    // stored server-side yet and are reported as their safe defaults.
     redactedLifecycleTelemetryEnabled: true,
     optionalDiagnosticsEnabled: false,
   };
 }
 
-// TODO(backend): Replace with a real mutation (e.g. PATCH /api/organizations/:id/privacy-defaults).
-// promptTelemetryEnabled must remain false unless an admin explicitly opts in — never default it
-// to true server-side, per the "no prompt storage by default" commitment on /privacy.
-export async function updatePrivacyDefaults(_input: Partial<PrivacyDefaults>): Promise<{ ok: boolean }> {
-  return { ok: true };
+export async function updateOrganizationProfile(input: { name: string }): Promise<MutationResult> {
+  return mutation('/api/portal/settings/update', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ display_name: input.name }),
+  }, 'Could not update the organization profile');
+}
+
+export async function updatePrivacyDefaults(input: Partial<PrivacyDefaults>): Promise<MutationResult> {
+  return mutation('/api/portal/settings/update', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ prompt_telemetry_enabled: input.promptTelemetryEnabled }),
+  }, 'Could not update privacy defaults');
 }

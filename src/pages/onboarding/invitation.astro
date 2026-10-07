@@ -34,7 +34,8 @@ const invitation = await getInvitation(token);
           </div>
         )
       }
-      <p class="invite-security"><Icon name="shield-check" size={13} /> This invitation is tied to {invitation?.inviteeEmail} and cannot be transferred.</p>
+      {!invitation && <p class="admin-action-error" role="status">This invitation is invalid, expired, or already resolved. Ask your administrator to send a new one.</p>}
+      {invitation && <p class="invite-security"><Icon name="shield-check" size={13} /> This invitation is tied to {invitation.inviteeEmail} and cannot be transferred.</p>}
     </section>
   </OnboardingShell>
 </BaseLayout>

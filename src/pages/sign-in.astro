@@ -7,9 +7,8 @@ import Icon from "../components/Icon.astro";
 import SignInForm from "../components/islands/SignInForm";
 import { getAuthenticatedUser } from "../lib/portal-account";
 
-// Desktop app callback support: if the desktop app navigates here with ?desktop_callback=...,
-// the sign-in will redirect back to that callback URL with the auth token.
-// This is passed to the form via URL params.
+// Desktop callback parameters continue through the normal website sign-in; after authentication,
+// the site issues only a short-lived, single-use PKCE authorization code to the native callback.
 const desktopCallback = Astro.url.searchParams.get('desktop_callback');
 const currentUser = desktopCallback ? await getAuthenticatedUser(Astro.request) : null;
 ---

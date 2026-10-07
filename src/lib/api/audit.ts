@@ -1,36 +1,49 @@
-import type { StatusTone } from "./machines";
+﻿import { readJson } from './portal-client';
+import type { StatusTone } from './types';
 
-export interface AuditEvent {
-  time: string;
-  date: string;
-  decision: "Approved" | "Denied" | "Schema change" | "Revoked";
-  tool: string;
-  actor: string;
-  reason: string;
-  server: string;
-  schemaHash: string;
-  tone: StatusTone;
+export interface AuditEventRow {
+  id: string;
+  event_type: string;
+  summary: string;
+  actor_user_id: string | null;
+  actor_machine_id: string | null;
+  created_at: string;
 }
 
-// TODO(backend): Replace with a real paginated query (e.g. GET /api/organizations/:id/audit-log)
-// reading redacted policy-decision and lifecycle events from the control plane. This log must
-// never include prompt text, file contents, tool arguments or tool results — only decision
-// metadata, per the privacy model described on /privacy.
-export async function listAuditEvents(): Promise<{ events: AuditEvent[]; totalCount: number }> {
-  return {
-    totalCount: 1284,
-    events: [
-      { time: "14:42:08", date: "Jul 17", decision: "Approved", tool: "finance.export", actor: "Priya Shah", reason: "Every-use confirmation", server: "Finance Systems", schemaHash: "sha256:8bd1…421a", tone: "good" },
-      { time: "14:38:51", date: "Jul 17", decision: "Denied", tool: "files.delete", actor: "Noah Williams", reason: "User denied confirmation", server: "Admin Operations", schemaHash: "sha256:2ac9…901c", tone: "bad" },
-      { time: "14:21:17", date: "Jul 17", decision: "Schema change", tool: "linear.create_issue", actor: "System", reason: "Tool disabled pending review", server: "Linear Workspace", schemaHash: "sha256:NEW…4f1d", tone: "warn" },
-      { time: "13:54:03", date: "Jul 17", decision: "Approved", tool: "finance.lookup", actor: "Darian J.", reason: "Policy: confirmation never", server: "Finance Systems", schemaHash: "sha256:7ac2…e91f", tone: "good" },
-      { time: "13:09:44", date: "Jul 17", decision: "Revoked", tool: "knowledge.search", actor: "Maya Chen", reason: "First-use approval revoked", server: "Knowledge Index", schemaHash: "sha256:be14…009c", tone: "neutral" },
-    ],
-  };
+export function decisionFor(event: AuditEventRow): { label: string; tone: StatusTone } {
+  switch (event.event_type) {
+    case 'tool_confirmation': return { label: 'Approved', tone: 'good' };
+    case 'tool_denied': return { label: 'Denied', tone: 'bad' };
+    case 'mcp_discovery': return { label: 'Schema change', tone: 'warn' };
+    case 'machine_revoked': return { label: 'Revoked', tone: 'neutral' };
+    default: return { label: event.event_type.replaceAll('_', ' '), tone: 'neutral' };
+  }
 }
 
-// TODO(backend): Replace with a real export (e.g. GET /api/organizations/:id/audit-log/export)
-// returning a downloadable, redacted metadata export honoring the organization's retention window.
-export async function exportAuditMetadata(): Promise<{ ok: boolean; downloadUrl: string }> {
-  return { ok: true, downloadUrl: "#" };
+export interface AuditPage {
+  events: AuditEventRow[];
+  nextCursor: string | null;
+}
+
+export async function listAuditEvents(cursor?: string | null): Promise<AuditPage> {
+  const suffix = cursor ? `?cursor=${encodeURIComponent(cursor)}` : '';
+  const body = await readJson<{ ok: true; events: AuditEventRow[]; next_cursor: string | null }>(
+    `/api/portal/audit${suffix}`, { method: 'GET' }, 'Could not load the audit log',
+  );
+  return { events: body.events, nextCursor: body.next_cursor };
+}
+
+export async function exportAuditMetadata(): Promise<void> {
+  const response = await fetch('/api/portal/audit/export', { method: 'GET', credentials: 'include' });
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new Error(typeof body.error === 'string' ? body.error : 'Could not export audit metadata');
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = 'audit-log.json';
+  anchor.click();
+  URL.revokeObjectURL(url);
 }
