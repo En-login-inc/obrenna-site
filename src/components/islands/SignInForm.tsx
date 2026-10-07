@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ArrowRight, ChevronRight, ShieldCheck } from "lucide-react";
-import { signIn, completeAuthRedirect, getDesktopContinuationQuery } from "../../lib/api/auth";
+import { signIn, completeAuthRedirect, getDesktopCallbackEndpointUrl, getDesktopContinuationQuery } from "../../lib/api/auth";
 import { DesktopHandoff } from "./DesktopHandoff";
 
 interface SignInFormProps {

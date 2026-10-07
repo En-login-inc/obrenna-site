@@ -7,6 +7,7 @@
     "dev": "astro dev",
     "build": "astro check && astro build",
     "preview": "astro preview",
+    "deploy:cloudflare": "wrangler deploy --config dist/server/wrangler.json",
     "typecheck": "astro check",
     "test:auth": "node --experimental-strip-types --test tests/auth-contract.test.ts tests/portal-bridge.test.ts tests/migration-runner.test.mjs tests/desktop-inference-contract.test.ts",
     "test:portal-integration": "node --experimental-strip-types --test tests/portal-integration.test.ts",
@@ -17,7 +18,7 @@
     "migrate:auth-db": "node ./scripts/migrate-auth-db.mjs"
   },
   "dependencies": {
-    "@astrojs/node": "^11.1.6",
+    "@astrojs/cloudflare": "^14.3.4",
     "@astrojs/react": "^7.0.0",
     "@astrojs/sitemap": "^3.2.1",
     "@tailwindcss/vite": "^4.0.0",
@@ -36,6 +37,7 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "playwright": "^1.61.1",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "wrangler": "^4.148.0"
   }
 }
