@@ -1,4 +1,5 @@
 import { dirname, resolve } from 'node:path';
+import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 import { applyMigrations } from './migration-runner.mjs';
@@ -23,7 +24,7 @@ async function databaseUrl() {
       if (error.code !== 'ENOENT') throw error;
     }
   }
-  throw new Error('AUTH_DB_URL is required (set it in the environment or site .env file)');
+  return 'postgresql://obrenna:obrenna@localhost:5432/obrenna-server-db';
 }
 
 async function applyConfiguredMigrations() {
