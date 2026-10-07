@@ -190,6 +190,25 @@ export default function MachineAdminPanel() {
     }
   }
 
+  async function deleteHost(machine: Machine) {
+    if (!window.confirm(`Permanently delete ${machine.display_name}? Its enrolled client computers will also be deleted. This cannot be undone.`)) return;
+    setBusy(true);
+    setError("");
+    try {
+      const response = await fetch(`/api/control/machines?delete=${encodeURIComponent(machine.id)}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Could not permanently delete this host.");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not permanently delete this host.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="machine-admin">
       {pairingToken && (
@@ -268,7 +287,13 @@ export default function MachineAdminPanel() {
               <span>{machine.os || "—"}</span>
               <span>{machine.last_seen_at ? new Date(machine.last_seen_at).toLocaleString() : "Never"}</span>
               <span className={`machine-status ${machine.status}`}>{machine.status}</span>
-              <span>{machine.status !== "revoked" && <button className="text-button" onClick={() => void revoke(machine)} disabled={busy}>Revoke</button>}</span>
+              <span>
+                {machine.status !== "revoked" ? (
+                  <button className="text-button" onClick={() => void revoke(machine)} disabled={busy}>Revoke</button>
+                ) : machine.kind === "host" ? (
+                  <button className="text-button" onClick={() => void deleteHost(machine)} disabled={busy}>Delete</button>
+                ) : null}
+              </span>
             </div>
           ))}
         </div>
