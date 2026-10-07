@@ -3,32 +3,86 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
 import AdminShell from "../../../components/AdminShell.astro";
 import Icon from "../../../components/Icon.astro";
 import PrivacyDefaultsToggles from "../../../components/islands/PrivacyDefaultsToggles";
-import { getOrganizationProfile, getPrivacyDefaults } from "../../../lib/api/settings";
+import { getOrganizationProfile, getPrivacyDefaults, type OrganizationProfile, type PrivacyDefaults } from "../../../lib/api/settings";
 
-const profile = await getOrganizationProfile();
-const privacyDefaults = await getPrivacyDefaults();
+let profile: OrganizationProfile | null = null;
+let privacyDefaults: PrivacyDefaults | null = null;
+let loadError = "";
+try {
+  profile = await getOrganizationProfile();
+  privacyDefaults = await getPrivacyDefaults();
+} catch (cause) {
+  loadError = cause instanceof Error ? cause.message : "Could not load organization settings";
+}
+
+const initials = profile ? profile.display_name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase() ?? "").join("") || "OB" : "";
 ---
 
 <BaseLayout title="Organization settings | Obrenna">
   <AdminShell title="Organization settings" eyebrow="CONTROL PLANE CONFIGURATION">
-    <div class="settings-layout">
-      <nav>
-        <a class="active">Organization</a>
-        <a>Account</a>
-      </nav>
-      <div class="settings-panels">
-        <article class="portal-card settings-card">
-          <div class="card-header"><div><h3>Organization profile</h3><p>Used in invitations, desktop configuration and audit exports.</p></div></div>
-          <label>Organization name<input value={profile.name} /></label>
-          <label>Organization identifier<div class="immutable-field"><input value={profile.identifier} disabled /><Icon name="lock-keyhole" size={14} /></div></label>
-          <label>Organization logo<div class="settings-logo"><span>NL</span><button>Replace logo</button><small>PNG or SVG · max 2 MB</small></div></label>
-          <div class="settings-actions"><button class="button">Save changes</button></div>
-        </article>
-        <article class="portal-card settings-card">
-          <div class="card-header"><div><h3>Default privacy configuration</h3><p>Applied to new environments unless explicitly overridden.</p></div></div>
-          <PrivacyDefaultsToggles initial={privacyDefaults} client:load />
-        </article>
+    {loadError && <section class="settings-error" role="status"><strong>Organization settings are unavailable.</strong><span>{loadError}</span></section>}
+
+    {!loadError && profile && (
+      <div class="settings-layout">
+        <nav>
+          <a class="active">General</a>
+          <a>Privacy &amp; telemetry</a>
+          <a>Retention</a>
+          <a>Authentication</a>
+          <a>Environments</a>
+          <a>Billing</a>
+          <a class="danger">Delete organization</a>
+        </nav>
+        <div class="settings-panels">
+          <article class="portal-card settings-card">
+            <div class="card-header"><div><h3>Organization profile</h3><p>Used in invitations, desktop configuration and audit exports.</p></div></div>
+            <form method="post" action="/api/portal/settings/update" id="org-profile-form">
+              <label>Organization name<input name="name" value={profile.display_name} /></label>
+              <label>Organization identifier<div class="immutable-field"><input value={profile.slug} disabled /><Icon name="lock-keyhole" size={14} /></div></label>
+              <label>Organization logo<div class="settings-logo"><span>{initials}</span><button disabled title="Logo updates are not supported yet">Replace logo</button><small>PNG or SVG · max 2 MB</small></div></label>
+              <p class="settings-feedback" id="org-profile-feedback" role="status"></p>
+              <div class="settings-actions"><button type="submit" class="button">Save changes</button></div>
+            </form>
+          </article>
+          <article class="portal-card settings-card">
+            <div class="card-header"><div><h3>Default privacy configuration</h3><p>Applied to new environments unless explicitly overridden.</p></div></div>
+            <PrivacyDefaultsToggles initial={privacyDefaults ?? undefined} client:load />
+          </article>
+        </div>
       </div>
-    </div>
+    )}
   </AdminShell>
 </BaseLayout>
+
+<script>
+  const form = document.getElementById('org-profile-form');
+  const feedback = document.getElementById('org-profile-feedback');
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!(form instanceof HTMLFormElement)) return;
+    const submit = form.querySelector('button[type="submit"]');
+    if (submit instanceof HTMLButtonElement) submit.disabled = true;
+    if (feedback) feedback.textContent = 'Saving…';
+    try {
+      const name = new FormData(form).get('name');
+      const response = await fetch('/api/portal/settings/update', {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ display_name: name }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (feedback) feedback.textContent = response.ok && body.ok !== false ? 'Changes saved.' : (typeof body.error === 'string' ? body.error : 'Could not save changes');
+    } catch {
+      if (feedback) feedback.textContent = 'Could not save changes';
+    } finally {
+      if (submit instanceof HTMLButtonElement) submit.disabled = false;
+    }
+  });
+</script>
+
+<style>
+  .settings-error { display:flex; flex-wrap:wrap; gap:4px 8px; padding:14px 16px; margin:0 0 18px; border:1px solid #dcaea6; border-radius:9px; background:#fdeeea; color:#6d2c20; font-size:12px; line-height:1.5; }
+  .settings-error strong { font-weight:700; }
+  .settings-feedback { min-height:18px; margin:0 0 8px; font-size:12px; color:var(--muted, #687276); }
+</style>

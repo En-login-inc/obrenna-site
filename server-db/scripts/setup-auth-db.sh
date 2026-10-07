@@ -8,6 +8,7 @@ set -euo pipefail
 # Paths resolve from the script location, not the caller's working directory.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DB_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+SITE_ROOT="$(cd "$DB_DIR/.." && pwd)"
 
 COMPOSE_FILE="$DB_DIR/docker-compose.auth.yml"
 SCHEMA_FILE="$DB_DIR/auth-schema-postgres.sql"
@@ -57,6 +58,9 @@ fi
 
 echo "Applying schema..."
 compose exec -T "$SERVICE" psql -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$DB_NAME" < "$SCHEMA_FILE"
+
+echo "Applying pending tracked migrations..."
+(cd "$SITE_ROOT" && node ./scripts/migrate-auth-db.mjs)
 
 echo "Tables:"
 compose exec -T "$SERVICE" psql -U "$DB_USER" -d "$DB_NAME" -c '\dt'

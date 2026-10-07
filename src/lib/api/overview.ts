@@ -1,4 +1,5 @@
-import type { StatusTone } from "./machines";
+﻿import type { StatusTone } from './types';
+import { readJson } from './portal-client';
 
 export interface OverviewMetric {
   icon: string;
@@ -17,47 +18,36 @@ export interface ActivityItem {
   tone: StatusTone;
 }
 
-export interface ServiceHealthRow {
-  icon: string;
-  label: string;
-  value: string;
-  sparkline: number[];
+export interface OverviewData {
+  tiles: {
+    activeMembers: number;
+    enrolledMachines: number;
+    machinesOnline: number;
+    healthyModelEndpoints: number;
+    mcpServers: number;
+    toolsPendingReview: number;
+  };
+  recentActivity: Array<{
+    id: string;
+    event_type: string;
+    summary: string;
+    actor_user_id: string | null;
+    actor_machine_id: string | null;
+    created_at: string;
+  }>;
 }
 
-// TODO(backend): Replace with a real aggregate query (e.g. GET /api/organizations/:id/overview)
-// combining machine, model, MCP and membership counts computed at request time.
-export async function getOverviewMetrics(): Promise<OverviewMetric[]> {
-  return [
-    { icon: "server", label: "Machines", value: "3", sub: "2 online · 1 staging", trend: "Healthy", tone: "good" },
-    { icon: "brain-circuit", label: "Model endpoints", value: "6", sub: "4 available to members", trend: "100% healthy", tone: "good" },
-    { icon: "network", label: "MCP servers", value: "8", sub: "31 approved tools", trend: "1 review", tone: "warn" },
-    { icon: "users", label: "Members", value: "47", sub: "41 active this week", trend: "3 invites", tone: "neutral" },
-  ];
+export async function getOverview(): Promise<OverviewData> {
+  const body = await readJson<OverviewData & { ok: true }>('/api/portal/overview', { method: 'GET' }, 'Could not load the organization overview');
+  return { tiles: body.tiles, recentActivity: body.recentActivity };
 }
 
-// TODO(backend): Replace with a real recent-activity feed (e.g. GET /api/organizations/:id/activity)
-// reading the same redacted audit event stream shown in full on /portal/admin/audit.
-export async function getRecentActivity(): Promise<ActivityItem[]> {
-  return [
-    { icon: "check-circle-2", title: "Tool use approved", sub: "Priya approved finance.lookup", time: "2 min ago", tone: "good" },
-    { icon: "alert-triangle", title: "Schema change detected", sub: "Linear MCP · create_issue", time: "18 min ago", tone: "warn" },
-    { icon: "user-plus", title: "Member invited", sub: "Noah Williams · Member", time: "1 hr ago", tone: "teal" },
-    { icon: "refresh-ccw", title: "Configuration applied", sub: "AI-NODE-01 · config v42", time: "3 hr ago", tone: "neutral" },
-  ];
-}
-
-// TODO(backend): Replace with real uptime/latency telemetry (e.g. GET /api/organizations/:id/service-health)
-// sourced from the health-metadata channel described in the privacy model, not prompt-level telemetry.
-export async function getServiceHealth(): Promise<ServiceHealthRow[]> {
-  return [
-    { icon: "brain-circuit", label: "Primary reasoning", value: "99.98%", sparkline: [2, 3, 4, 3, 5, 4, 5, 5, 4, 5, 5, 5] },
-    { icon: "network", label: "MCP services", value: "99.94%", sparkline: [2, 3, 4, 3, 5, 4, 5, 5, 4, 5, 5, 5] },
-    { icon: "refresh-ccw", label: "Configuration sync", value: "100%", sparkline: [2, 3, 4, 3, 5, 4, 5, 5, 4, 5, 5, 5] },
-  ];
-}
-
-// TODO(backend): Replace with a real onboarding-progress query (e.g. GET /api/organizations/:id/setup-progress)
-// tracking which of the recommended first-run steps (invite members, configure a tool policy, etc.) are complete.
-export async function getSetupProgress(): Promise<{ completedSteps: number; totalSteps: number }> {
-  return { completedSteps: 3, totalSteps: 4 };
+export function formatRelativeTime(iso: string): string {
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return 'Unknown time';
+  const seconds = Math.max(0, Math.floor((Date.now() - then) / 1000));
+  if (seconds < 60) return 'Just now';
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)} hr ago`;
+  return `${Math.floor(seconds / 86400)} days ago`;
 }

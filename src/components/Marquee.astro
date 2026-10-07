@@ -1,0 +1,28 @@
+---
+/**
+ * Full-bleed scrolling claims strip. Pure CSS keyframe loop (no JS).
+ */
+const claims = [
+  "No prompt or output storage by default",
+  "Runs on hardware you control",
+  "One governed desktop experience",
+  "Policy applied before a model answers",
+];
+---
+
+<div class="home-marquee">
+  <div class="home-marquee-strip">
+    <div class="home-marquee-track">
+      {[0, 1].map(() => (
+        <div class="home-marquee-set">
+          {claims.map((claim) => (
+            <>
+              <span>{claim}</span>
+              <i>/</i>
+            </>
+          ))}
+        </div>
+      ))}
+    </div>
+  </div>
+</div>

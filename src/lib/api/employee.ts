@@ -1,7 +1,11 @@
-import type { StatusTone } from "./machines";
+﻿import { readJson } from './portal-client';
+import type { StatusTone } from './types';
+import type { MutationResult } from './mutation-result';
 
 export interface ConnectionStatus {
   organizationName: string;
+  machineCount: number;
+  onlineMachineCount: number;
   machineName: string;
   availableModelCount: number;
   availableToolCount: number;
@@ -9,73 +13,91 @@ export interface ConnectionStatus {
   connected: boolean;
 }
 
-export interface EmployeeModel {
-  icon: string;
-  variant: "default" | "alt";
-  name: string;
-  description: string;
-}
-
-export interface EmployeeToolService {
-  icon: string;
-  name: string;
-  summary: string;
-  confirmationNote: string;
-}
-
-export interface EmployeeConfirmation {
-  tool: string;
+export interface EmployeeModelRow {
+  id: string;
+  display_name: string;
+  provider: string;
+  base_url: string;
   status: string;
-  time: string;
-  tone: StatusTone;
 }
 
-// TODO(backend): Replace with a real query (e.g. GET /api/me/connection) reading the signed-in
-// user's live desktop-app connection state, reported by the Obrenna Desktop app itself rather
-// than assumed by the website.
-export async function getConnectionStatus(): Promise<ConnectionStatus> {
+export interface EmployeeToolRow {
+  id: string;
+  server_id: string;
+  tool_name: string;
+  risk: string;
+  confirmation: string;
+  enabled: boolean;
+}
+
+export interface EmployeeConfirmationRow {
+  id: string;
+  event_type: string;
+  summary: string;
+  created_at: string;
+}
+
+export interface EmployeePortalData {
+  organization: { id: string; slug: string; display_name: string; config_revision: number };
+  viewer: { user_id: string; role: string };
+  connections: Array<{
+    machine_id: string;
+    display_name: string;
+    status: string;
+    last_seen_at: string | null;
+  }>;
+  allocated_models: EmployeeModelRow[];
+  allocated_tools: EmployeeToolRow[];
+  recent_confirmations: EmployeeConfirmationRow[];
+}
+
+export async function getEmployeePortal(): Promise<EmployeePortalData> {
+  const body = await readJson<EmployeePortalData & { ok: true }>('/api/portal/employee', { method: 'GET' }, 'Could not load your organization access');
+  return body;
+}
+
+export function toConnectionStatus(data: EmployeePortalData | null, organizationName: string): ConnectionStatus {
+  if (!data) {
+    return {
+      organizationName,
+      machineCount: 0,
+      onlineMachineCount: 0,
+      machineName: 'Unavailable',
+      availableModelCount: 0,
+      availableToolCount: 0,
+      configVersion: 'Unavailable',
+      connected: false,
+    };
+  }
+  const online = data.connections.filter((c) => c.status === 'online');
   return {
-    organizationName: "Northstar Production",
-    machineName: "AI-NODE-01",
-    availableModelCount: 4,
-    availableToolCount: 24,
-    configVersion: "v42",
-    connected: true,
+    organizationName,
+    machineCount: data.connections.length,
+    onlineMachineCount: online.length,
+    machineName: online[0]?.display_name ?? 'No machine online',
+    availableModelCount: data.allocated_models.length,
+    availableToolCount: data.allocated_tools.length,
+    configVersion: `v${data.organization.config_revision}`,
+    connected: online.length > 0,
   };
 }
 
-// TODO(backend): Replace with a real query (e.g. GET /api/me/models) reading models assigned to
-// the signed-in user's role from the current policy configuration.
-export async function getAvailableModels(): Promise<EmployeeModel[]> {
-  return [
-    { icon: "brain-circuit", variant: "default", name: "General Assistant", description: "Everyday writing, research and analysis" },
-    { icon: "sparkles", variant: "alt", name: "Reasoning Primary", description: "Complex analysis and multi-step work" },
-  ];
+export function confirmationTone(eventType: string): StatusTone {
+  switch (eventType) {
+    case 'tool_confirmation': return 'good';
+    case 'tool_denied': return 'bad';
+    default: return 'neutral';
+  }
 }
 
-// TODO(backend): Replace with a real query (e.g. GET /api/me/tools) reading tool-service access
-// grouped by MCP server, scoped to the signed-in user's role and current policy configuration.
-export async function getAvailableToolServices(): Promise<EmployeeToolService[]> {
-  return [
-    { icon: "database", name: "Knowledge Index", summary: "7 read tools", confirmationNote: "No confirmation" },
-    { icon: "link-2", name: "Linear Workspace", summary: "6 available · 1 unavailable", confirmationNote: "Write confirmation" },
-    { icon: "globe-2", name: "Finance Systems", summary: "4 read tools", confirmationNote: "Role limited" },
-  ];
-}
-
-// TODO(backend): Replace with a real query (e.g. GET /api/me/confirmations) reading the signed-in
-// user's own recent tool-confirmation decisions — visible only to that user and authorized admins.
-export async function getMyRecentConfirmations(): Promise<EmployeeConfirmation[]> {
-  return [
-    { tool: "finance.lookup", status: "Approved", time: "Today, 1:54 PM", tone: "good" },
-    { tool: "linear.create_issue", status: "Approved", time: "Yesterday, 4:18 PM", tone: "good" },
-    { tool: "files.delete", status: "Denied by policy", time: "July 14, 11:02 AM", tone: "neutral" },
-  ];
-}
-
-// TODO(backend): Replace with a real connection diagnostic (e.g. POST /api/me/connection/check)
-// that pings the user's enrolled desktop app / private machine and reports live results, instead
-// of this being a purely client-side "Open Obrenna Desktop" link.
-export async function runConnectionCheck(): Promise<{ ok: boolean }> {
-  return { ok: true };
+/**
+ * A live connection diagnostic is not supported by the control plane yet.
+ * Report that honestly rather than faking a passing check.
+ */
+export async function runConnectionCheck(): Promise<MutationResult> {
+  return {
+    ok: false,
+    unavailable: true,
+    message: 'Desktop connection diagnostics are not available yet. Your connection status above reflects the last control-plane heartbeat.',
+  };
 }

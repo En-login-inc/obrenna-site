@@ -6,9 +6,8 @@ import Eyebrow from "../components/Eyebrow.astro";
 import Icon from "../components/Icon.astro";
 import SignUpForm from "../components/islands/SignUpForm";
 
-// Desktop app callback support: if the desktop app navigates here with ?desktop_callback=...,
-// the sign-up will redirect back to that callback URL with the auth token.
-// This is passed to the form via URL params.
+// Desktop callback parameters continue through the normal website sign-up; after authentication,
+// the site issues only a short-lived, single-use PKCE authorization code to the native callback.
 const desktopCallback = Astro.url.searchParams.get('desktop_callback');
 ---
 
