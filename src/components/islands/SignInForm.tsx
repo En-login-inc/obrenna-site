@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ArrowRight, KeyRound, ChevronRight, ShieldCheck } from "lucide-react";
-import { signIn, startSsoSignIn, completeAuthRedirect } from "../../lib/api/auth";
+import { signIn, startSsoSignIn, completeAuthRedirect, getDesktopCallbackEndpointUrl, getDesktopContinuationQuery } from "../../lib/api/auth";
 import { DesktopHandoff } from "./DesktopHandoff";
 
 interface SignInFormProps {
@@ -57,7 +57,7 @@ export default function SignInForm({ desktopCallback, currentUser }: SignInFormP
   }
 
   if (desktopCallback && currentUser && !useDifferentAccount) {
-    const callbackUrl = `/api/auth/desktop-callback?desktop_callback=${encodeURIComponent(desktopCallback)}`;
+    const callbackUrl = getDesktopCallbackEndpointUrl(desktopCallback);
     return (
       <div className="auth-card">
         <div className="auth-card-head">
@@ -99,7 +99,7 @@ export default function SignInForm({ desktopCallback, currentUser }: SignInFormP
         <KeyRound size={16} /> Organization SSO <ChevronRight size={16} />
       </button>
       <p className="auth-switch">
-        New to Obrenna? <a href={desktopCallback ? `/sign-up?desktop_callback=${encodeURIComponent(desktopCallback)}` : "/sign-up"}>Create account</a>
+        New to Obrenna? <a href={desktopCallback ? `/sign-up?${getDesktopContinuationQuery(desktopCallback)}` : "/sign-up"}>Create account</a>
       </p>
       <div className="auth-security">
         <ShieldCheck size={14} /> Protected with encrypted sessions and optional MFA.

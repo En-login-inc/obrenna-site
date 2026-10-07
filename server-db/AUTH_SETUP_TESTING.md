@@ -1,364 +1,55 @@
-# Auth System Setup & Testing Guide
+# Website identity and grant setup
 
-This guide walks through setting up and testing the Obrenna centralized auth system with Postgres backend.
+The website’s PostgreSQL database is the authority for accounts, organizations, memberships, registered desktop devices, model assignments, and inference-grant policy. The desktop’s local SQLite database remains separate and stores local conversation and artifact state.
 
-## Prerequisites
+## Local development
 
-- Docker and Docker Compose installed
-- Node.js 18+ and npm
-- PostgreSQL client tools (`psql`, optional but helpful)
+Requirements: Node.js/npm, Docker Desktop with its Linux container engine, and PostgreSQL client tools if you want to inspect the schema directly.
 
-## Local Setup
+1. Copy `.env.example` to `.env` and set `AUTH_DB_URL`. Keep credentials local.
+2. Start PostgreSQL and apply the base schema plus ordered migrations:
 
-### Step 1: Initialize Postgres Database
-
-```bash
-# From project root
-docker-compose -f docker-compose.auth.yml up -d
-```
-
-Wait for the container to be healthy (healthcheck should pass):
-
-```bash
-docker-compose -f docker-compose.auth.yml logs postgres-auth
-# Look for: "database system is ready to accept connections"
-```
-
-### Step 2: Load Schema & Sample Data
-
-Navigate to the site directory and run the bootstrap script:
-
-```bash
-cd obrenna-site
-npm run setup:auth-db
-```
-
-You should see output like:
-```
-✓ Connected to auth database
-✓ Schema tables created (8 tables)
-✓ Sample plans seeded (starter, pro)
-✓ Database ready for testing
-```
-
-### Step 3: Verify Schema
-
-List tables to confirm:
-
-```bash
-psql -h localhost -U obrenna -d obrenna-server-db -c "\dt"
-```
-
-Expected output:
-```
-                  List of relations
- Schema |          Name          | Type  | Owner
---------+------------------------+-------+-------
- public | auth_sessions          | table | obrenna
- public | billing_events         | table | obrenna
- public | desktop_auth_devices   | table | obrenna
- public | organization_memberships | table | obrenna
- public | organizations          | table | obrenna
- public | plans                  | table | obrenna
- public | subscriptions          | table | obrenna
- public | users                  | table | obrenna
-```
-
-### Step 4: Start the Development Server
-
-```bash
-cd obrenna-site
-npm install --legacy-peer-deps  # if not already done
-npm run dev
-```
-
-Server starts on `http://localhost:4321`
-
-## Testing Auth Flow
-
-### Test 1: Web Sign-Up
-
-1. Navigate to `http://localhost:4321/sign-up`
-2. Fill in:
-   - Name: `Test User`
-   - Email: `test@example.com`
-   - Password: `TestPassword123!`
-3. Click Sign Up
-4. Should redirect to `/onboarding/create-organization`
-
-Verify in database:
-
-```bash
-psql -h localhost -U obrenna -d obrenna-server-db -c "SELECT id, email, full_name, status FROM users WHERE email = 'test@example.com';"
-```
-
-### Test 2: Web Sign-In
-
-1. Navigate to `http://localhost:4321/sign-in`
-2. Enter the credentials from Test 1
-3. Click Sign In
-4. Should redirect to `/onboarding/create-organization`
-
-### Test 3: Sign-In with Desktop Callback
-
-Test the deep-linking flow by sending a sign-in request with a desktop callback:
-
-```bash
-curl -X POST http://localhost:4321/api/auth/sign-in \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "test@example.com",
-    "password": "TestPassword123!",
-    "desktop_callback": "obrenna://auth?action=auth-callback"
-  }' \
-  -i
-```
-
-The response should be a redirect (302):
-
-```
-HTTP/1.1 302 Found
-Location: obrenna://auth?action=auth-callback&token=<uuid>&expires_at=<iso8601>&user_id=<uuid>&email=test@example.com&billing_status=trialing&Set-Cookie: ...
-```
-
-Extract the token from the URL and parse the parameters:
-
-```bash
-# Extract from the curl response above
-TOKEN="<uuid-from-token-param>"
-EXPIRES_AT="<iso8601-from-expires_at-param>"
-
-# Verify token in database
-psql -h localhost -U obrenna -d obrenna-server-db -c "SELECT id, user_id, expires_at, status FROM auth_sessions WHERE session_token = '$TOKEN';"
-```
-
-### Test 4: Get Current User
-
-Using the session from Test 3, you can test the `/api/auth/me` endpoint:
-
-```bash
-curl http://localhost:4321/api/auth/me \
-  -H "Cookie: obrenna_auth=session:$TOKEN"
-```
-
-Response:
-
-```json
-{
-  "ok": true,
-  "user": {
-    "id": "...",
-    "email": "test@example.com",
-    "full_name": "Test User",
-    "status": "active"
-  }
-}
-```
-
-### Test 5: Refresh Token
-
-Before the session expires, refresh it:
-
-```bash
-curl -X POST http://localhost:4321/api/auth/refresh \
-  -H "Authorization: Bearer $TOKEN"
-```
-
-Response:
-
-```json
-{
-  "ok": true,
-  "session": {
-    "id": "...",
-    "expires_at": "2026-10-30T..."
-  }
-}
-```
-
-The new `expires_at` should be 30 days from now.
-
-### Test 6: Sign-Out
-
-```bash
-curl -X POST http://localhost:4321/api/auth/sign-out \
-  -H "Authorization: Bearer $TOKEN"
-```
-
-Verify the session is revoked:
-
-```bash
-psql -h localhost -U obrenna -d obrenna-server-db -c "SELECT status FROM auth_sessions WHERE session_token = '$TOKEN';"
-```
-
-Should show `revoked`.
-
-## Database Structure
-
-### Users Table
-
-Stores user identity.
-
-```sql
-CREATE TABLE users (
-  id UUID PRIMARY KEY,
-  email VARCHAR(255) UNIQUE NOT NULL,
-  full_name VARCHAR(255) NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,  -- PBKDF2-SHA256 format
-  status VARCHAR(50) DEFAULT 'active',  -- active, suspended, deleted
-  email_verified_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-```
-
-### Organizations Table
-
-Groups users for billing and permission management.
-
-```sql
-CREATE TABLE organizations (
-  id UUID PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  slug VARCHAR(255) UNIQUE NOT NULL,
-  status VARCHAR(50) DEFAULT 'active',
-  metadata JSONB,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-```
-
-### Organization Memberships Table
-
-Links users to organizations with roles.
-
-```sql
-CREATE TABLE organization_memberships (
-  id UUID PRIMARY KEY,
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-  role VARCHAR(50) DEFAULT 'member',  -- owner, admin, member
-  status VARCHAR(50) DEFAULT 'active',
-  invited_by UUID REFERENCES users(id),
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(user_id, organization_id)
-);
-```
-
-### Auth Sessions Table
-
-Tracks active sessions with expiry.
-
-```sql
-CREATE TABLE auth_sessions (
-  id UUID PRIMARY KEY,
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  session_token VARCHAR(255) UNIQUE NOT NULL,
-  status VARCHAR(50) DEFAULT 'active',  -- active, revoked
-  expires_at TIMESTAMPTZ NOT NULL,
-  revoked_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-```
-
-### Subscriptions & Plans Tables
-
-Track billing status (if Stripe integration added later).
-
-```sql
-CREATE TABLE plans (
-  id BIGSERIAL PRIMARY KEY,
-  code VARCHAR(50) UNIQUE NOT NULL,
-  name VARCHAR(255) NOT NULL,
-  price_cents BIGINT NOT NULL,
-  currency VARCHAR(3) DEFAULT 'USD',
-  interval VARCHAR(50) DEFAULT 'month',
-  features JSONB,
-  status VARCHAR(50) DEFAULT 'active',
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE subscriptions (
-  id UUID PRIMARY KEY,
-  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-  plan_id BIGINT REFERENCES plans(id),
-  status VARCHAR(50) DEFAULT 'trialing',  -- trialing, active, past_due, canceled
-  current_period_start TIMESTAMPTZ,
-  current_period_end TIMESTAMPTZ,
-  cancel_at TIMESTAMPTZ,
-  provider VARCHAR(50),  -- 'stripe', 'local'
-  provider_customer_id VARCHAR(255),
-  provider_subscription_id VARCHAR(255),
-  metadata JSONB,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-```
-
-## Troubleshooting
-
-### Postgres Connection Failed
-
-```bash
-# Check if container is running
-docker ps | grep postgres-auth
-
-# Check logs
-docker logs obrenna-postgres-auth
-
-# Restart container
-docker-compose -f docker-compose.auth.yml restart postgres-auth
-```
-
-### Schema Tables Not Created
-
-```bash
-# Check if bootstrap script ran
-cd obrenna-site
-npm run setup:auth-db
-
-# Or manually load schema
-psql -h localhost -U obrenna -d obrenna-server-db < ../auth-schema-postgres.sql
-```
-
-### Sign-In Says "Invalid Credentials"
-
-1. Verify user exists in database:
-   ```bash
-   psql -h localhost -U obrenna -d obrenna-server-db -c "SELECT email FROM users WHERE email = 'test@example.com';"
+   ```powershell
+   npm run setup:auth-db
    ```
 
-2. If not found, sign up first via web UI at `http://localhost:4321/sign-up`
+   On macOS/Linux, use `npm run setup:auth-db:sh`. The scripts wait for PostgreSQL readiness, apply the base schema, and run ordered migrations through a checksum ledger in `schema_migrations`. An applied migration that is later edited fails closed; add a new migration instead. Validate upgrade behavior against a disposable database before relying on it for production.
+3. Start the Astro Node server:
 
-3. Check password is correct (passwords are case-sensitive)
-
-### Session Token Not Working
-
-1. Verify session is active:
-   ```bash
-   psql -h localhost -U obrenna -d obrenna-server-db -c "SELECT status, expires_at FROM auth_sessions WHERE session_token = 'YOUR_TOKEN';"
+   ```sh
+   npm run dev
    ```
 
-2. If `status = 'revoked'`, you need to sign in again
+4. Run contract tests and the production build:
 
-3. If `expires_at` is in the past, token has expired
+   ```sh
+   npm run test:auth
+   npm run build
+   ```
 
-## Desktop App Integration
+## Desktop authorization flow
 
-Once the auth system is working, integrate into the Tauri desktop app:
+Authenticate through the normal sign-in form. The desktop starts authorization with an S256 PKCE challenge and random state. The site redirects to `obrenna://auth` with a two-minute, single-use code and the original state; it never returns a long-lived session token in the redirect URL. The desktop validates state and exchanges the code and verifier through its native backend. Store returned credentials in the OS credential vault.
 
-1. Copy `backend/desktop_auth.py` → Desktop app's auth module (translated to TypeScript/Rust)
-2. Implement deep-link handler for `obrenna://` scheme
-3. Use `DesktopAuthClient` to manage login/callback/refresh flow
-4. See [DESKTOP_AUTH_INTEGRATION.md](./DESKTOP_AUTH_INTEGRATION.md) for details
+Relevant routes in the Astro auth API include `POST /api/auth/desktop-authorize`, `GET /api/auth/desktop-callback`, `POST /api/auth/desktop-exchange`, `POST /api/auth/inference-grant`, and `GET /api/auth/inference-grant-status`. All require the appropriate active website session or registered desktop identity. Do not test by copying credentials into a browser URL or shell history.
 
-## Next Steps
+## Inference-grant configuration
 
-- [ ] Add Stripe webhook integration for real billing status
-- [ ] Implement session revocation by admin
-- [ ] Add device management (list/revoke logged-in devices)
-- [ ] Set up email verification flow
-- [ ] Add password reset flow
-- [ ] Implement MFA
+Configure these deployment values through a secret manager:
+
+- `SITE_PUBLIC_ORIGIN`: one canonical origin; HTTPS is required in production.
+- `INFERENCE_GRANT_KEY_ID`: public key identifier (`kid`).
+- `INFERENCE_GRANT_PRIVATE_KEY`: RS256 private key in PEM format.
+- `AUTH_DB_URL`: PostgreSQL connection string for identity and authorization state.
+
+The private signing key must never be checked into source control. Public keys are served from `/.well-known/jwks.json`. Grants expire within 24 hours and do not self-extend when the site is unreachable. Revocation or a newer policy revision denies a cached grant when the site can report it.
+
+## Test coverage and deployment gate
+
+`npm run test:auth` verifies signing configuration, key-discoverable RS256 grants, expiration, unconfigured mutations, organization-scoped membership reads and updates, and stale-policy denial. These are contract tests; they do not prove that SQL migrations work against a real PostgreSQL server or that the packaged desktop callback and OS-vault path works end to end.
+
+Before production, apply migrations to a disposable PostgreSQL instance from both an empty schema and a copy of the supported previous schema, then verify a `pg_dump`/`pg_restore` round trip preserves the migrated schema and representative identity, membership, and device rows. CI runs these checks against PostgreSQL 16, matching the local development Compose service; production should use a supported PostgreSQL release and pass the same migration and restore checks before rollout. Separately verify operational rollback and restore procedures against the production backup policy, then run the packaged desktop sign-in, PKCE exchange, grant issuance, policy refresh, and revocation scenarios. Also test expired grants and site outage. Do not treat CI's disposable-database restore check or a successful static build as production backup or deployment certification.
+
+The repeatable schema checks run against actual PostgreSQL databases. Set `MIGRATION_TEST_ADMIN_URL` to a disposable PostgreSQL database URL whose role can create and drop databases, then run `npm run test:auth:migrations:postgres`; `pg_dump` and `pg_restore` must also be installed. The test creates uniquely named fresh-install, pre-migration, and restore-target databases, applies the tracked migration twice, restores a custom-format backup of the upgraded schema, checks schema and retained fixture rows, and drops all three databases. Never point this command at a production database.
+
+After `npm run build`, run `npm run test:auth:desktop-postgres` with the same disposable admin URL to exercise the built website’s PKCE authorization, state validation, one-use code exchange, RS256 grant, JWKS publication, and membership-revocation path over HTTP. This test also creates and drops its own database; it never uses the site’s regular `AUTH_DB_URL`.

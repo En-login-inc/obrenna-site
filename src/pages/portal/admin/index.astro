@@ -2,100 +2,108 @@
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import AdminShell from "../../../components/AdminShell.astro";
 import Icon from "../../../components/Icon.astro";
-import IconBox from "../../../components/IconBox.astro";
 import Status from "../../../components/Status.astro";
 import { routes } from "../../../lib/routes";
-import { getOverviewMetrics, getRecentActivity, getServiceHealth, getSetupProgress } from "../../../lib/api/overview";
-import { listMachines } from "../../../lib/api/machines";
-import type { StatusTone } from "../../../lib/api/machines";
+import { getOverview, formatRelativeTime } from "../../../lib/api/overview";
+import type { StatusTone } from "../../../lib/api/types";
 
-const metrics = await getOverviewMetrics();
-const activity = await getRecentActivity();
-const serviceHealth = await getServiceHealth();
-const setupProgress = await getSetupProgress();
-const machines = await listMachines();
+let overview: Awaited<ReturnType<typeof getOverview>> | null = null;
+let loadError = "";
+try {
+  overview = await getOverview();
+} catch (cause) {
+  loadError = cause instanceof Error ? cause.message : "Could not load the organization overview";
+}
 
 const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }).toUpperCase();
+
+const tiles: Array<{ icon: string; label: string; value: string; sub: string; tone: StatusTone }> = overview ? [
+  { icon: "users", label: "Members", value: String(overview.tiles.activeMembers), sub: "Active members", tone: "neutral" },
+  { icon: "server", label: "Machines", value: String(overview.tiles.enrolledMachines), sub: `${overview.tiles.machinesOnline} online`, tone: overview.tiles.machinesOnline > 0 ? "good" : "neutral" },
+  { icon: "brain-circuit", label: "Model endpoints", value: String(overview.tiles.healthyModelEndpoints), sub: "Healthy", tone: overview.tiles.healthyModelEndpoints > 0 ? "good" : "warn" },
+  { icon: "network", label: "MCP servers", value: String(overview.tiles.mcpServers), sub: `${overview.tiles.toolsPendingReview} tools pending review`, tone: overview.tiles.toolsPendingReview > 0 ? "warn" : "good" },
+] : [];
 ---
 
 <BaseLayout title="Organization overview | Obrenna">
   <AdminShell title="Organization overview" eyebrow={today}>
-    <div class="overview-banner">
-      <div><Icon name="shield-check" /><span><b>Your private AI service is healthy</b><small>All production policies are applied · config v42</small></span></div>
-      <Status>Operational</Status>
-    </div>
-
-    <div class="metric-grid">
-      {
-        metrics.map((m) => (
-          <article class="metric-card">
-            <div class="metric-top"><IconBox icon={m.icon} /><Status tone={m.tone as StatusTone}>{m.trend}</Status></div>
-            <b>{m.value}</b>
-            <span>{m.label}</span>
-            <small>{m.sub}</small>
-          </article>
-        ))
-      }
-    </div>
-
-    <div class="overview-main-grid">
-      <article class="portal-card infrastructure-card">
-        <div class="card-header"><div><h3>Infrastructure</h3><p>Organization-owned machines</p></div><a>View all<Icon name="arrow-right" size={13} /></a></div>
-        <div class="infra-visual">
-          <div class="infra-cloud"><Icon name="cloud-cog" size={18} /><span><b>Control plane</b><small>config v42</small></span><Status>Synced</Status></div>
-          <div class="infra-path"><span></span><Icon name="shield-check" size={13} /><span></span></div>
-          {
-            machines.slice(0, 3).map((m) => (
-              <div class="infra-node">
-                <Icon name="server" size={17} />
-                <span><b>{m.name}</b><small>{m.environment} · {m.os}</small></span>
-                <em>{m.hardware.split(" · ")[0]}</em>
-                <Status tone={m.tone}>{m.status}</Status>
-              </div>
-            ))
-          }
+    {loadError && (
+      <section class="overview-unavailable" aria-labelledby="overview-unavailable-title">
+        <div class="overview-icon"><Icon name="activity" size={22} /></div>
+        <div>
+          <h2 id="overview-unavailable-title">Live organization overview is unavailable</h2>
+          <p>{loadError}</p>
         </div>
-      </article>
-      <article class="portal-card activity-card">
-        <div class="card-header"><div><h3>Recent policy activity</h3><p>Redacted audit metadata</p></div><a href={routes.audit}>Open audit<Icon name="arrow-right" size={13} /></a></div>
-        <div class="activity-list">
-          {
-            activity.map((a) => (
-              <div>
-                <IconBox icon={a.icon} tone={a.tone as StatusTone} />
-                <span><b>{a.title}</b><small>{a.sub}</small></span>
-                <time>{a.time}</time>
-              </div>
-            ))
-          }
-        </div>
-      </article>
-    </div>
+      </section>
+    )}
 
-    <div class="overview-bottom">
-      <article class="portal-card">
-        <div class="card-header"><div><h3>Service health</h3><p>Last 24 hours</p></div></div>
-        <div class="service-list">
-          {
-            serviceHealth.map((s) => (
-              <div>
-                <Icon name={s.icon} size={16} />
-                <span>{s.label}</span>
-                <div class="spark-bars">{s.sparkline.map((n) => <i style={`height:${n * 4}px`} />)}</div>
-                <b>{s.value}</b>
-              </div>
-            ))
-          }
-        </div>
-      </article>
-      <article class="portal-card setup-card-small">
-        <span>DEPLOYMENT PROGRESS</span>
-        <h3>Finish organization setup</h3>
-        <p>Invite at least two members and configure your first tool policy.</p>
-        <div><i style={`width:${(setupProgress.completedSteps / setupProgress.totalSteps) * 100}%`}></i></div>
-        <small>{setupProgress.completedSteps} of {setupProgress.totalSteps} recommended steps complete</small>
-        <button>Continue setup <Icon name="arrow-right" size={13} /></button>
-      </article>
+    {!loadError && overview && (
+      <div class="overview-tiles">
+        {
+          tiles.map((tile) => (
+            <div class="portal-card overview-tile">
+              <div class="overview-tile-head"><Icon name={tile.icon} size={17} /><Status tone={tile.tone}>{tile.label}</Status></div>
+              <b>{tile.value}</b>
+              <small>{tile.sub}</small>
+            </div>
+          ))
+        }
+      </div>
+    )}
+
+    {!loadError && overview && (
+      <section class="overview-activity portal-card">
+        <h2>Recent activity</h2>
+        {overview.recentActivity.length === 0 && <p role="status">No audit activity has been recorded yet.</p>}
+        {
+          overview.recentActivity.map((event) => (
+            <div class="overview-activity-row">
+              <Status tone={event.event_type.includes("denied") ? "bad" : event.event_type.includes("discovery") ? "warn" : "good"}>{event.event_type.replaceAll("_", " ")}</Status>
+              <span><b>{event.summary || event.event_type}</b><small>{formatRelativeTime(event.created_at)}</small></span>
+            </div>
+          ))
+        }
+        {overview.recentActivity.length === 0 && <p>No recent activity.</p>}
+      </section>
+    )}
+
+    <div class="overview-links">
+      <a class="portal-card" href={routes.machines}>
+        <Icon name="server" size={18} />
+        <span><b>Inference machines</b><small>View the organization's registered machine access and model assignments.</small></span>
+        <Icon name="arrow-right" size={14} />
+      </a>
+      <a class="portal-card" href={routes.people}>
+        <Icon name="users" size={18} />
+        <span><b>Organization members</b><small>Review membership status and available administrative actions.</small></span>
+        <Icon name="arrow-right" size={14} />
+      </a>
+      <a class="portal-card" href={routes.audit}>
+        <Icon name="file-clock" size={18} />
+        <span><b>Audit activity</b><small>Open the audit view to review recorded decisions.</small></span>
+        <Icon name="arrow-right" size={14} />
+      </a>
     </div>
   </AdminShell>
 </BaseLayout>
+
+<style>
+  .overview-unavailable { display:flex; align-items:flex-start; gap:14px; padding:22px; border:1px solid var(--border, #dedede); border-radius:12px; background:var(--surface, #fff); }
+  .overview-icon { display:grid; place-items:center; width:42px; height:42px; flex:0 0 auto; border-radius:10px; background:#f1f4f5; color:#53646a; }
+  .overview-unavailable h2 { margin:0 0 6px; font-size:16px; }
+  .overview-unavailable p { max-width:760px; margin:0; color:var(--muted, #687276); font-size:13px; line-height:1.6; }
+  .overview-tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-bottom:16px; }
+  .overview-tile { display:grid; gap:6px; padding:16px; }
+  .overview-tile b { font-size:26px; line-height:1.1; }
+  .overview-tile small { color:var(--muted, #687276); font-size:12px; }
+  .overview-tile-head { display:flex; align-items:center; gap:8px; color:#53646a; }
+  .overview-activity { padding:16px; margin-bottom:16px; }
+  .overview-activity h2 { margin:0 0 10px; font-size:15px; }
+  .overview-activity-row { display:flex; align-items:center; gap:10px; padding:8px 0; border-top:1px solid var(--border, #eee); }
+  .overview-activity-row > span { display:grid; gap:2px; }
+  .overview-activity small { color:var(--muted, #687276); font-size:12px; }
+  .overview-links { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
+  .overview-links a { display:flex; align-items:center; gap:12px; padding:16px; color:inherit; text-decoration:none; }
+  .overview-links a > span { display:grid; gap:5px; flex:1; }
+  .overview-links small { color:var(--muted, #687276); font-size:12px; line-height:1.5; }
+</style>

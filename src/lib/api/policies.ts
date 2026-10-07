@@ -1,18 +1,19 @@
-import type { StatusTone } from "./machines";
+﻿import type { StatusTone } from './types';
+import { readJson, mutation } from './portal-client';
+import type { MutationResult } from './mutation-result';
 
-export interface ToolPolicy {
-  tool: string;
-  server: string;
-  risk: "Read" | "Write" | "Destructive" | "Network";
-  confirmation: "Never" | "First use" | "Every use";
-  eligibleRoles: string;
-  approval: "Approved" | "Schema changed" | "Disabled";
-  tone: StatusTone;
+export interface ToolPolicyRow {
+  id: string;
+  server_id: string;
+  server_name: string;
+  tool_name: string;
   enabled: boolean;
-  schemaHash: string;
+  risk: 'read' | 'network' | 'write' | 'destructive';
+  confirmation: 'never' | 'first_use' | 'every_use';
+  updated_at: string;
 }
 
-export interface PolicySummary {
+export interface PolicySummaryRow {
   approvedToolCount: number;
   readCount: number;
   networkCount: number;
@@ -21,41 +22,31 @@ export interface PolicySummary {
   appliedRevision: string;
 }
 
-// TODO(backend): Replace with a real query (e.g. GET /api/organizations/:id/tool-policies)
-// reading the current signed policy configuration from the control plane. New and changed
-// tools must default to enabled: false server-side — the UI must never be the source of truth
-// for that default.
-export async function listToolPolicies(): Promise<ToolPolicy[]> {
-  return [
-    { tool: "finance.lookup", server: "Finance Systems", risk: "Read", confirmation: "Never", eligibleRoles: "Members", approval: "Approved", tone: "good", enabled: true, schemaHash: "sha256:7ac2…e91f" },
-    { tool: "finance.export", server: "Finance Systems", risk: "Write", confirmation: "Every use", eligibleRoles: "Admin, Finance", approval: "Approved", tone: "teal", enabled: true, schemaHash: "sha256:7ac2…e91f" },
-    { tool: "linear.create_issue", server: "Linear Workspace", risk: "Write", confirmation: "Every use", eligibleRoles: "Members", approval: "Schema changed", tone: "warn", enabled: false, schemaHash: "changed" },
-    { tool: "files.delete", server: "Admin Operations", risk: "Destructive", confirmation: "Every use", eligibleRoles: "Admin", approval: "Disabled", tone: "neutral", enabled: false, schemaHash: "sha256:7ac2…e91f" },
-  ];
+export async function listToolPolicies(): Promise<ToolPolicyRow[]> {
+  const body = await readJson<{ ok: true; policies: ToolPolicyRow[] }>('/api/portal/tool-policies', { method: 'GET' }, 'Could not load tool policies');
+  return body.policies;
 }
 
-// TODO(backend): Replace with a real aggregate query over the current policy configuration.
-export async function getPolicySummary(): Promise<PolicySummary> {
-  return {
-    approvedToolCount: 31,
-    readCount: 18,
-    networkCount: 4,
-    writeCount: 8,
-    destructiveCount: 1,
-    appliedRevision: "v42",
-  };
+export async function getPolicySummary(): Promise<PolicySummaryRow> {
+  const body = await readJson<{ ok: true; summary: PolicySummaryRow }>('/api/portal/tool-policies', { method: 'GET' }, 'Could not load tool policies');
+  return body.summary;
 }
 
-// TODO(backend): Replace with a real mutation (e.g. PATCH /api/tool-policies/:tool) that
-// updates the enabled flag, re-signs the configuration revision, and pushes it to organization
-// agents. A tool with a pending schema change must stay disabled until explicitly approved,
-// regardless of this toggle.
-export async function setToolEnabled(_tool: string, _enabled: boolean): Promise<{ ok: boolean }> {
-  return { ok: true };
+export async function setToolEnabled(policyId: string, enabled: boolean): Promise<MutationResult> {
+  return mutation('/api/portal/tool-policies/update', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ policy_id: policyId, enabled }),
+  }, 'Could not update this tool policy');
 }
 
-// TODO(backend): Replace with a real export (e.g. GET /api/organizations/:id/tool-policies/export)
-// returning a signed, downloadable policy document (JSON or CSV) for offline review.
-export async function exportPolicy(): Promise<{ ok: boolean; downloadUrl: string }> {
-  return { ok: true, downloadUrl: "#" };
+export function policyTone(risk: ToolPolicyRow['risk'], enabled: boolean): StatusTone {
+  if (!enabled) return 'neutral';
+  switch (risk) {
+    case 'destructive': return 'bad';
+    case 'write': return 'teal';
+    case 'network': return 'warn';
+    case 'read': return 'good';
+    default: return 'neutral';
+  }
 }

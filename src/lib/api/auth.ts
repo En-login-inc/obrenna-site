@@ -29,32 +29,42 @@ export interface AuthSession {
   expires_at: string;
 }
 
-interface AuthResponseData {
-  user: { id: string; email: string; full_name: string; status: string };
-  session: { id: string; token: string; expires_at: string; billing_status?: string };
-  organization?: { id: string; name: string; role: string; billingStatus: string };
-}
-
 function getDesktopCallback(): string | null {
   const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
   return params.get('desktop_callback');
 }
 
-/**
- * Build the `obrenna://auth?token=...` deep-link URL the desktop app expects,
- * using the session token from the just-completed sign-in/sign-up response
- * (the raw token never leaves the server otherwise -- it's stored HttpOnly).
- */
-function buildDesktopCallbackUrl(desktopCallback: string, data: AuthResponseData): string {
-  const url = new URL(desktopCallback);
-  url.searchParams.set('token', data.session.token);
-  url.searchParams.set('expires_at', data.session.expires_at);
-  url.searchParams.set('user_id', data.user.id);
-  url.searchParams.set('email', data.user.email);
-  url.searchParams.set('org_id', data.organization?.id ?? '');
-  url.searchParams.set('org_name', data.organization?.name ?? '');
-  url.searchParams.set('billing_status', data.organization?.billingStatus ?? data.session.billing_status ?? 'trialing');
-  return url.toString();
+async function buildDesktopCallbackUrl(): Promise<string> {
+  const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+  const desktopCallback = params.get('desktop_callback');
+  const challenge = params.get('code_challenge');
+  const state = params.get('state');
+  if (desktopCallback !== 'obrenna://auth' || params.get('code_challenge_method') !== 'S256' || !challenge || !state) {
+    throw new Error('The desktop sign-in request is missing PKCE authorization parameters');
+  }
+  const response = await fetch('/api/auth/desktop-authorize', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+    body: JSON.stringify({ desktop_callback: desktopCallback, code_challenge: challenge, state }),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || !data.ok || typeof data.callback_url !== 'string') {
+    throw new Error(data.error || 'Could not start secure desktop sign-in');
+  }
+  return data.callback_url;
+}
+
+export function getDesktopContinuationQuery(desktopCallback: string): string {
+  const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+  const next = new URLSearchParams({ desktop_callback: desktopCallback });
+  for (const key of ['state', 'code_challenge', 'code_challenge_method']) {
+    const value = params.get(key);
+    if (value) next.set(key, value);
+  }
+  return next.toString();
+}
+
+export function getDesktopCallbackEndpointUrl(desktopCallback: string): string {
+  return `/api/auth/desktop-callback?${getDesktopContinuationQuery(desktopCallback)}`;
 }
 
 /**
@@ -94,12 +104,11 @@ export async function signIn(payload: SignInPayload): Promise<AuthResult> {
     // Store user context for the UI
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('auth_user', JSON.stringify(data.user));
-      sessionStorage.setItem('auth_session', JSON.stringify(data.session));
     }
 
     const desktopCallback = getDesktopCallback();
     const redirectTo = desktopCallback
-      ? buildDesktopCallbackUrl(desktopCallback, data)
+      ? await buildDesktopCallbackUrl()
       : getRedirectAfterAuth(Boolean(data.organization));
 
     return { ok: true, redirectTo, isDesktopRedirect: Boolean(desktopCallback) };
@@ -134,12 +143,11 @@ export async function signUp(payload: SignUpPayload): Promise<AuthResult> {
     // Store user context for the UI
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('auth_user', JSON.stringify(data.user));
-      sessionStorage.setItem('auth_session', JSON.stringify(data.session));
     }
 
     const desktopCallback = getDesktopCallback();
     const redirectTo = desktopCallback
-      ? `/onboarding/create-organization?desktop_callback=${encodeURIComponent(desktopCallback)}`
+      ? `/onboarding/create-organization?${getDesktopContinuationQuery(desktopCallback)}`
       : getRedirectAfterAuth();
 
     return { ok: true, redirectTo, isDesktopRedirect: false };

@@ -3,59 +3,54 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
 import AdminShell from "../../../components/AdminShell.astro";
 import Icon from "../../../components/Icon.astro";
 import Status from "../../../components/Status.astro";
-import { listModelEndpoints, getModelCapacity } from "../../../lib/api/models";
+import { listModelEndpoints, modelStatusLabel, type ModelEndpointRow } from "../../../lib/api/models";
+import type { StatusTone } from "../../../lib/api/types";
 
-const endpoints = await listModelEndpoints();
-const capacity = await getModelCapacity();
+let models: ModelEndpointRow[] = [];
+let loadError = "";
+try {
+  models = await listModelEndpoints();
+} catch (cause) {
+  loadError = cause instanceof Error ? cause.message : "Could not load model endpoints";
+}
+
+function statusTone(status: string): StatusTone {
+  if (status === "healthy") return "good";
+  if (status === "unreachable") return "bad";
+  return "warn";
+}
 ---
 
 <BaseLayout title="Model endpoints | Obrenna">
   <AdminShell title="Model endpoints" eyebrow="PRIVATE INFERENCE">
     <Fragment slot="actions">
-      <button class="button"><Icon name="plus" size={15} /> Register endpoint</button>
+      <button disabled title="Model registration requires a configured control-plane connection" class="button"><Icon name="plus" size={15} /> Register endpoint</button>
     </Fragment>
 
-    <div class="model-capacity">
-      <div>
-        <Icon name="brain-circuit" size={20} />
-        <span><b>{capacity.healthyEndpointCount} healthy endpoints across {capacity.machineCount} machines</b><small>All employee-facing model roles have production redundancy.</small></span>
-      </div>
-      <div><span>Current requests</span><b>{capacity.currentRequests}</b></div>
-      <div><span>Available capacity</span><b>{capacity.availableCapacityPct}%</b></div>
-      <Status>Healthy</Status>
-    </div>
+    {loadError && <section class="models-error" role="status"><strong>Model endpoints are unavailable.</strong><span>{loadError}</span></section>}
+    {!loadError && models.length === 0 && <p class="models-empty" role="status">No model endpoints are registered for this organization yet.</p>}
 
-    <div class="model-grid">
-      {
-        endpoints.map((e) => (
-          <article class="portal-card model-card">
-            <div class="model-card-top">
-              <div class="icon-box icon-teal"><Icon name="brain-circuit" size={19} strokeWidth={1.8} /></div>
-              <Status tone={e.tone}>{e.tone === "warn" ? "Testing" : "Available"}</Status>
-              <Icon name="more-horizontal" size={16} />
+    {
+      !loadError && models.length > 0 && (
+        <div class="models-table portal-card">
+          <div class="table-head"><span>Endpoint</span><span>Provider</span><span>Base URL</span><span>Status</span><span>Last checked</span></div>
+          {models.map((m) => (
+            <div class="table-row">
+              <span><b>{m.display_name}</b><small>{m.capabilities.join(", ") || "No capabilities"}</small></span>
+              <span>{m.provider}</span>
+              <span><code>{m.base_url}</code></span>
+              <span><Status tone={statusTone(m.status)}>{modelStatusLabel(m.status)}</Status>{m.last_error && <small>{m.last_error}</small>}</span>
+              <span>{m.last_checked_at ? new Date(m.last_checked_at).toLocaleString() : "Not checked"}</span>
             </div>
-            <span>{e.environment.toUpperCase()} ENDPOINT</span>
-            <h3>{e.title}</h3>
-            <p>{e.model}</p>
-            <dl>
-              <div><dt>Runtime</dt><dd>{e.runtime}</dd></div>
-              <div><dt>Role</dt><dd>{e.role}</dd></div>
-              <div><dt>Context</dt><dd>{e.contextWindow}</dd></div>
-              <div><dt>Machine</dt><dd>{e.machine}</dd></div>
-            </dl>
-            <div class="model-card-foot">
-              <span><Icon name="activity" size={12} /> Checked {e.lastCheckedAgo} ago</span>
-              <button>View endpoint <Icon name="chevron-right" size={13} /></button>
-            </div>
-          </article>
-        ))
-      }
-    </div>
-
-    <div class="capacity-warning">
-      <Icon name="gauge" size={18} />
-      <span><b>Capacity planning</b><small>Peak utilization reached {capacity.peakUtilizationPct}% this week. Production headroom remains within the policy target of {capacity.policyHeadroomTargetPct}%.</small></span>
-      <button>View utilization</button>
-    </div>
+          ))}
+        </div>
+      )
+    }
   </AdminShell>
 </BaseLayout>
+
+<style>
+  .models-error { display:flex; flex-wrap:wrap; gap:4px 8px; padding:14px 16px; margin:0 0 18px; border:1px solid #dcaea6; border-radius:9px; background:#fdeeea; color:#6d2c20; font-size:12px; line-height:1.5; }
+  .models-error strong { font-weight:700; }
+  .models-empty { margin:0 0 18px; color:var(--muted, #687276); font-size:13px; }
+</style>

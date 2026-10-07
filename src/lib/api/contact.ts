@@ -1,3 +1,5 @@
+import type { MutationResult } from './mutation-result';
+
 export interface ContactRequestPayload {
   workEmail: string;
   firstName: string;
@@ -7,11 +9,29 @@ export interface ContactRequestPayload {
   message: string;
 }
 
-// TODO(backend): Replace with a real submission (e.g. POST /api/contact-sales) that validates
-// the work email, writes the lead to CRM/sales-pipeline storage, and triggers the "reply within
-// one business day" notification to the sales team. Currently a no-op that always succeeds.
+/** Proxied by the Astro server into the control plane's lead store. */
 export async function submitContactRequest(
-  _payload: ContactRequestPayload
-): Promise<{ ok: boolean }> {
-  return { ok: true };
+  payload: ContactRequestPayload,
+): Promise<MutationResult> {
+  try {
+    const response = await fetch('/api/contact-sales', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        company_name: payload.organization,
+        work_email: payload.workEmail,
+        contact_name: `${payload.firstName} ${payload.lastName}`.trim(),
+        message: [payload.teamSize ? `Team size: ${payload.teamSize}` : '', payload.message]
+          .filter(Boolean)
+          .join('\n'),
+      }),
+    });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok || body.received !== true) {
+      return { ok: false, message: typeof body.detail === 'string' ? body.detail : 'Could not submit this request' };
+    }
+    return { ok: true, data: { lead_id: body.lead_id } };
+  } catch (error) {
+    return { ok: false, message: error instanceof Error ? error.message : 'Could not reach Obrenna' };
+  }
 }

@@ -589,6 +589,8 @@ svg { flex: 0 0 auto; }
 .table-head { display:grid; grid-template-columns:1.6fr .9fr 1.3fr 1.1fr 1fr .9fr 30px; padding:0 6px 12px; border-bottom:1px solid #eef1ee; font-size:10px; letter-spacing:.05em; color:#8a9895; font-weight:650; }
 .table-row { display:grid; grid-template-columns:1.6fr .9fr 1.3fr 1.1fr 1fr .9fr 30px; align-items:center; padding:14px 6px; border-bottom:1px solid #eef1ee; font-size:12px; }
 .table-row:last-child { border-bottom:0; }
+.real-machine-table .table-head,
+.real-machine-table .table-row { grid-template-columns:1.5fr 1.4fr 1fr .8fr .65fr; }
 .machine-name { display:flex; align-items:center; gap:10px; }
 .machine-icon { width:32px; height:32px; border-radius:8px; display:grid; place-items:center; flex-shrink:0; }.machine-icon svg { width:16px; }
 .machine-icon.good { background:#e5f5eb; color:#2d9160; }.machine-icon.warn { background:#fff3dc; color:#a26a0f; }.machine-icon.neutral { background:#eef1ee; color:#60706d; }
@@ -645,6 +647,16 @@ svg { flex: 0 0 auto; }
 .people-tabs > span { flex:1; }
 .people-tabs > button:last-child { border:1px solid #d5ddda; border-radius:8px; padding:9px 13px; margin:0; display:flex; gap:6px; }
 .people-table .table-head, .people-table .table-row { grid-template-columns:1.6fr .8fr 1.4fr 1fr 1fr .9fr 30px; }
+.people-tab-current { display:inline-flex; align-items:center; gap:7px; color:var(--teal-deep); font-size:12px; font-weight:650; }
+.people-tab-current > span { padding:2px 7px; border-radius:99px; background:#e8f2f0; font-size:10px; }
+.membership-action { border:1px solid #cbd7d4; background:white; border-radius:7px; padding:7px 10px; color:#314642; font-size:11px; font-weight:600; cursor:pointer; }
+.membership-action:disabled { cursor:not-allowed; opacity:.55; }
+.admin-action-error, .admin-action-success { border-radius:8px; padding:11px 13px; margin:0 0 14px; font-size:12px; line-height:1.5; }
+.admin-action-error { color:#8d2e2e; background:#fff0ef; border:1px solid #efc9c6; }
+.admin-action-success { color:#27604d; background:#ecf7f0; border:1px solid #c9e7d3; }
+.admin-data-notice { display:flex; flex-wrap:wrap; gap:4px 8px; padding:12px 14px; margin:0 0 18px; border:1px solid #e3c98d; border-radius:9px; background:#fff8e8; color:#654d18; font-size:12px; line-height:1.5; }
+.admin-data-notice strong { font-weight:700; }
+.membership-help { margin-top:12px; color:#6e7e7b; font-size:11px; }
 .person { display:flex; align-items:center; gap:10px; }.person i { width:30px; height:30px; border-radius:50%; background:var(--teal-deep); color:white; display:grid; place-items:center; font-size:10px; font-weight:700; font-style:normal; flex-shrink:0; }
 .person b { display:block; font-size:12px; }.person small { font-size:10px; color:#8a9895; }
 .role-owner { color:var(--teal-deep); font-style:normal; font-weight:650; font-size:11px; }.role-admin { color:#5a6d94; font-style:normal; font-weight:650; font-size:11px; }.role-member { color:#3d4c49; font-style:normal; font-weight:600; font-size:11px; }.role-auditor { color:#8a6f2e; font-style:normal; font-weight:600; font-size:11px; }
@@ -749,4 +761,6 @@ svg { flex: 0 0 auto; }
   }
   .data-divider { max-width: none; }
   .persona-row a { margin-top: 4px; }
+  .real-machine-table .table-head { display:none; }
+  .real-machine-table .table-row { grid-template-columns:1fr; gap:10px; }
 }
