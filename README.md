@@ -2,21 +2,43 @@
 
 Marketing site plus the centralized identity and organization-policy API for Obrenna, built with
 [Astro](https://astro.build) and React islands. The site runs in server mode via
-`@astrojs/node` so the `/api/auth/*` endpoints can talk to Postgres.
+`@astrojs/cloudflare` on Cloudflare Workers so the `/api/auth/*` endpoints can talk to Postgres.
 
 ## Prerequisites
 
-- Node.js 18+
+- Node.js 22.19+ (or Node.js 24)
 - Docker Desktop (for the local auth database)
 
 ## Install
 
 ```bash
-npm install --legacy-peer-deps
+npm ci
 ```
 
-`--legacy-peer-deps` is required: `@astrojs/node@8` declares a peer dependency on
-Astro 4 while this project runs Astro 5. The adapter works correctly regardless.
+## Production deployment
+
+Connect `En-login-inc/obrenna-site` to Cloudflare Workers Builds with `main` as
+the production branch, `npm run build` as the build command, and
+`npm run deploy:cloudflare` as the deploy command. The generated configuration
+at `dist/server/wrangler.json` includes the server entry point and static assets.
+The existing Pages asset-upload workflow does not deploy this server bundle.
+
+Configure `AUTH_DB_URL` as a Worker secret pointing to the existing production
+PostgreSQL database. Apply the tracked migrations using `npm run migrate:auth-db`
+with that connection in the migration process's environment before enabling
+database-backed features. Each request opens and closes its own database pool;
+Worker sockets must not be reused across requests.
+
+Configure `INFERENCE_GRANT_KEY_ID`, `INFERENCE_GRANT_PRIVATE_KEY`,
+`INFERENCE_PAIRING_JWT_SECRET`, and `OBRENNA_SERVER_GITHUB_TOKEN` in the Worker
+secret store. Portal operations also require `CONTROL_PLANE_URL`,
+`CONTROL_PLANE_ASSERTION_KEY_ID`, and `CONTROL_PLANE_ASSERTION_PRIVATE_KEY`,
+with the matching public key installed on the control plane. Never commit these
+credentials. The canonical production origin is `https://obrenna.com`.
+
+Deploy and verify the Worker preview before assigning `obrenna.com` as its custom
+domain. Once the Git connection and production branch are configured, pushes to
+`main` build and deploy automatically.
 
 ## 1. Set up the server database
 
