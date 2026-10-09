@@ -6,6 +6,7 @@ import { getPortalAccount } from '../../../lib/portal-account';
 
 type RouteInput = { request: Request; route: string };
 type Handler = (input: RouteInput) => Promise<Response>;
+type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE';
 
 function getRoute(params: Record<string, unknown> | undefined) {
   const value = params?.route;
@@ -204,7 +205,7 @@ async function readGuardrails(organizationId: string) {
   });
 }
 
-const handlers: Record<string, Partial<Record<'GET' | 'POST' | 'PATCH', Handler>>> = {
+const handlers: Record<string, Partial<Record<HttpMethod, Handler>>> = {
   'hosts/install-source': {
     GET: async ({ request }) => {
       try {
@@ -599,6 +600,24 @@ const handlers: Record<string, Partial<Record<'GET' | 'POST' | 'PATCH', Handler>
         return errorResponse(error);
       }
     }),
+    DELETE: async ({ request }) => withAdmin(request, async (account) => {
+      const id = new URL(request.url).searchParams.get('delete');
+      if (!id) return buildError('A machine ID is required', 400);
+      try {
+        return await withAuthDb(async (client) => {
+          const result = await client.query(
+            `DELETE FROM inference_hosts
+             WHERE id = $1 AND organization_id = $2 AND revoked_at IS NOT NULL
+             RETURNING id`,
+            [id, account.organization.id],
+          );
+          if (!result.rowCount) return buildError('Only revoked hosts can be deleted', 404);
+          return Response.json({ ok: true });
+        });
+      } catch (error) {
+        return errorResponse(error);
+      }
+    }),
   },
   'host/sync': {
     POST: async ({ request }) => {
@@ -721,7 +740,7 @@ const handlers: Record<string, Partial<Record<'GET' | 'POST' | 'PATCH', Handler>
   },
 };
 
-async function dispatch(method: 'GET' | 'POST' | 'PATCH', params: Record<string, unknown> | undefined, request: Request) {
+async function dispatch(method: HttpMethod, params: Record<string, unknown> | undefined, request: Request) {
   const route = getRoute(params);
   const handler = handlers[route]?.[method];
   if (!handler) return buildError('Route not found', 404);
@@ -731,3 +750,4 @@ async function dispatch(method: 'GET' | 'POST' | 'PATCH', params: Record<string,
 export const GET: APIRoute = ({ params, request }) => dispatch('GET', params as Record<string, unknown>, request);
 export const POST: APIRoute = ({ params, request }) => dispatch('POST', params as Record<string, unknown>, request);
 export const PATCH: APIRoute = ({ params, request }) => dispatch('PATCH', params as Record<string, unknown>, request);
+export const DELETE: APIRoute = ({ params, request }) => dispatch('DELETE', params as Record<string, unknown>, request);
