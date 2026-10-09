@@ -12,7 +12,7 @@ interface Props {
 
 const { title, eyebrow } = Astro.props;
 const path = Astro.url.pathname;
-const account = await getPortalAccount(Astro.request);
+const account = Astro.locals.portalAccount ?? await getPortalAccount(Astro.request);
 
 if (!account) {
   return Astro.redirect(`/sign-in?returnTo=${encodeURIComponent(`${path}${Astro.url.search}`)}`);
