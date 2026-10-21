@@ -449,7 +449,6 @@ svg { flex: 0 0 auto; }
 .portal-sidebar nav a svg { width:16px; }
 .portal-sidebar nav a:hover { background:rgba(255,255,255,.04); color:white; }
 .portal-sidebar nav a.active { background:rgba(104,195,199,.12); color:var(--teal-bright); font-weight:600; }
-.portal-sidebar nav a i { margin-left:auto; background:var(--amber); color:#3c2c04; font-size:9px; font-style:normal; font-weight:700; border-radius:9px; padding:1px 6px; }
 .portal-sidebar nav a svg:last-child { margin-left:auto; width:12px; opacity:.6; }
 .sidebar-health { border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.02); border-radius:10px; padding:13px; margin:10px 0; }
 .sidebar-health > div { display:flex; gap:9px; align-items:center; }.sidebar-health svg { width:16px; color:var(--green); }.sidebar-health b { font-size:11px; display:block; }.sidebar-health small { font-size:9px; color:#7e908c; }
