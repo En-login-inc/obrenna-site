@@ -13,15 +13,14 @@ interface Props {
 
 // Bundled at build time: the Cloudflare runtime has no filesystem to read
 // node_modules from, so the SVG sources must travel with the worker.
-const icons = import.meta.glob<string>("/node_modules/lucide-static/icons/*.svg", {
+const icons = import.meta.glob<{ default: string }>("/node_modules/lucide-static/icons/*.svg", {
   query: "?raw",
-  import: "default",
 });
 
 const { name, size = 20, strokeWidth = 2, class: className = "" } = Astro.props;
 
 const load = icons[`/node_modules/lucide-static/icons/${name}.svg`];
-const raw = load ? await load() : "";
+const raw = load ? (await load()).default : "";
 const inner = raw.match(/<svg[^>]*>([\s\S]*)<\/svg>/)?.[1] ?? "";
 ---
 
