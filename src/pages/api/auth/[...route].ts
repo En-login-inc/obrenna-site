@@ -29,6 +29,7 @@ const routeMap: Record<string, AuthRouteHandler> = {
   'inference-machines/revoke': handleRevokeInferenceMachine,
   'inference-model-access': handleInferenceModelAccess,
   'organization-members': handleOrganizationMembersRoute,
+  'organization-code-mode': handleOrganizationCodeMode,
 };
 
 function getRoute(params: Record<string, unknown> | undefined) {
@@ -570,7 +571,7 @@ async function handleInferenceGrant({ request }: { request: Request; url: URL; r
 
   return withAuthDb(async (client) => {
     const access = await client.query(
-      `SELECT s.user_id, d.organization_id, d.id AS device_id, o.policy_revision
+      `SELECT s.user_id, d.organization_id, d.id AS device_id, o.policy_revision, o.code_mode_enabled
        FROM auth_sessions s
        JOIN users u ON u.id = s.user_id AND u.status = 'active'
        JOIN organization_memberships om ON om.user_id = s.user_id AND om.status = 'active'
@@ -599,6 +600,7 @@ async function handleInferenceGrant({ request }: { request: Request; url: URL; r
         deviceId: row.device_id,
         assignments: models.rows.map((item) => ({ machineId: item.machine_id, modelId: item.model_id })),
         policyRevision: Number(row.policy_revision),
+        codeMode: row.code_mode_enabled !== false,
       });
       await client.query('UPDATE desktop_auth_devices SET last_seen_at = NOW(), updated_at = NOW() WHERE id = $1', [row.device_id]);
       return Response.json({ ok: true, grant: grant.token, expires_at: grant.expiresAt }, {
@@ -662,6 +664,35 @@ async function handleInferenceGrantStatus({ request }: { request: Request; url: 
     policy_rev: Number(claims.policy_rev),
     assignments: claims.assignments as Array<{ machine_id: string; model_id: string }>,
   }));
+}
+
+async function handleOrganizationCodeMode({ request, url }: { request: Request; url: URL; route: string }) {
+  const body = request.method === 'POST' ? await request.json().catch(() => ({})) : {};
+  const requested = request.method === 'POST' ? body.organization_id : url.searchParams.get('organization_id');
+  const organizationId = typeof requested === 'string' ? requested : null;
+  if (!organizationId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(organizationId)) {
+    return buildError('A valid organization_id is required', 400);
+  }
+  if (request.method !== 'GET' && request.method !== 'POST') return buildError('GET or POST is required', 405);
+  return withAuthDb(async (client) => {
+    const access = await activeOrganizationAccess(client, request, organizationId);
+    if (!access) return buildError('An active organization session is required', 403);
+    if (request.method === 'GET') {
+      const current = await client.query('SELECT code_mode_enabled FROM organizations WHERE id = $1', [access.organization_id]);
+      return Response.json({ ok: true, enabled: current.rows[0]?.code_mode_enabled !== false }, {
+        headers: { 'Cache-Control': 'no-store' },
+      });
+    }
+    if (!['owner', 'admin'].includes(access.role)) return buildError('Organization administrator access is required', 403);
+    if (typeof body.enabled !== 'boolean') return buildError('enabled must be true or false', 400);
+    // A new policy revision makes grants already issued stale, so desktops fetch one with the new value.
+    const updated = await client.query(
+      `UPDATE organizations SET code_mode_enabled = $2, policy_revision = policy_revision + 1, updated_at = NOW()
+       WHERE id = $1 RETURNING code_mode_enabled`,
+      [access.organization_id, body.enabled],
+    );
+    return Response.json({ ok: true, enabled: updated.rows[0].code_mode_enabled }, { headers: { 'Cache-Control': 'no-store' } });
+  });
 }
 
 async function handleInferenceMachines({ request, url }: { request: Request; url: URL; route: string }) {
