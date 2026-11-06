@@ -56,6 +56,9 @@ async function verifyDatabase(name, upgrade) {
          EXISTS (SELECT 1 FROM information_schema.columns
                  WHERE table_schema = current_schema() AND table_name = 'organizations'
                    AND column_name = 'policy_revision') AS has_policy_revision,
+         (SELECT column_default FROM information_schema.columns
+           WHERE table_schema = current_schema() AND table_name = 'organizations'
+             AND column_name = 'code_mode_enabled') AS code_mode_default,
          to_regclass('idx_desktop_auth_devices_user_org_key') IS NOT NULL AS has_scoped_device_key,
          NOT EXISTS (SELECT 1 FROM pg_constraint
                      WHERE conname = 'desktop_auth_devices_device_key_key') AS removed_global_device_key,
@@ -64,8 +67,9 @@ async function verifyDatabase(name, upgrade) {
          (SELECT count(*) FROM organization_memberships) AS membership_count`,
     );
     assert.deepEqual(result.rows[0], {
-      migration_count: '1',
+      migration_count: '2',
       has_policy_revision: true,
+      code_mode_default: 'true',
       has_scoped_device_key: true,
       removed_global_device_key: true,
       device_count: upgrade ? '1' : '0',
@@ -125,7 +129,7 @@ async function verifyBackupRestore(sourceName, restoredName, backupDirectory) {
                    AND column_name = 'policy_revision') AS has_policy_revision`,
     );
     assert.deepEqual(result.rows[0], {
-      migration_count: '1',
+      migration_count: '2',
       user_count: '1',
       membership_count: '1',
       device_count: '1',

@@ -57,6 +57,7 @@ export async function signInferenceGrant(input: {
   deviceId: string;
   assignments: Array<{ machineId: string; modelId: string }>;
   policyRevision: number;
+  codeMode?: boolean;
 }) {
   const config = signingConfiguration();
   const key = await importPKCS8(config.pem, 'RS256');
@@ -71,6 +72,7 @@ export async function signInferenceGrant(input: {
     models,
     assignments,
     policy_rev: input.policyRevision,
+    code_mode: input.codeMode !== false,
   })
     .setProtectedHeader({ alg: 'RS256', kid: config.kid, typ: 'JWT' })
     .setIssuer(config.issuer)
@@ -102,6 +104,9 @@ export async function verifyInferenceGrant(token: string) {
     audience: grantAudience,
     algorithms: ['RS256'],
   });
+  if (payload.code_mode !== undefined && typeof payload.code_mode !== 'boolean') {
+    throw new Error('Inference grant claims are incomplete or invalid');
+  }
   if (!payload.sub || !payload.jti || !payload.org || !payload.device
       || typeof payload.policy_rev !== 'number' || !Number.isSafeInteger(payload.policy_rev)
       || !Array.isArray(payload.assignments) || payload.assignments.length === 0

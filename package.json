@@ -9,7 +9,7 @@
     "preview": "astro preview",
     "deploy:cloudflare": "wrangler deploy --config dist/server/wrangler.json",
     "typecheck": "astro check",
-    "test:auth": "node --experimental-strip-types --test tests/auth-contract.test.ts tests/portal-bridge.test.ts tests/migration-runner.test.mjs tests/desktop-inference-contract.test.ts",
+    "test:auth": "node --experimental-strip-types --test tests/auth-contract.test.ts tests/portal-bridge.test.ts tests/migration-runner.test.mjs tests/desktop-inference-contract.test.ts tests/code-mode-grant.test.ts",
     "test:portal-integration": "node --experimental-strip-types --test tests/portal-integration.test.ts",
     "test:auth:migrations:postgres": "node scripts/verify-auth-migrations.mjs",
     "test:auth:desktop-postgres": "node scripts/verify-desktop-auth-flow.mjs",

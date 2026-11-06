@@ -3,8 +3,11 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
 import AdminShell from "../../../components/AdminShell.astro";
 import Icon from "../../../components/Icon.astro";
 import PolicyToolTable from "../../../components/islands/PolicyToolTable";
+import CodeModeSwitch from "../../../components/islands/CodeModeSwitch";
+import { getPortalAccount } from "../../../lib/portal-account";
 import { listToolPolicies, getPolicySummary, type ToolPolicyRow, type PolicySummaryRow } from "../../../lib/api/policies";
 
+const account = await getPortalAccount(Astro.request);
 let tools: ToolPolicyRow[] = [];
 let summary: PolicySummaryRow | null = null;
 let loadError = "";
@@ -32,6 +35,8 @@ try {
         <div class="destructive"><b>{summary.destructiveCount}</b><span>Destructive</span></div>
       </div>
     )}
+
+    {account && ['owner', 'admin'].includes(account.organization.role.toLowerCase()) && <CodeModeSwitch organizationId={account.organization.id} client:load />}
 
     {!loadError && <PolicyToolTable tools={tools} client:load />}
 
