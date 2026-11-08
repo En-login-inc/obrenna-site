@@ -9,7 +9,7 @@ import { getPortalAccount } from "../lib/portal-account";
 
 const account = await getPortalAccount(Astro.request);
 if (account) {
-  return Astro.redirect(routes.admin);
+  return Astro.redirect(routes.download);
 }
 
 const homeLimitations = [
