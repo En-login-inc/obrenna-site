@@ -15,9 +15,14 @@ const archive = join(outDir, 'obrenna-server.tar.gz');
 
 for (const required of ['pyproject.toml', 'obrenna_server/main.py', 'obrenna_server/panel_dist/index.html', 'scripts/start.sh']) {
   if (!existsSync(join(serverRoot, required))) {
-    console.error(`Cannot bundle Obrenna-Server: ${required} is missing in ${serverRoot}.`);
-    if (required.includes('panel_dist')) console.error('Build the control panel first: cd Obrenna-Server/control-panel && npm install && npm run build');
-    process.exit(1);
+    // CI and Cloudflare builds only have this repo checked out, so a missing
+    // sibling Obrenna-Server is expected there: warn and skip instead of failing.
+    // Set REQUIRE_SERVER_BUNDLE=1 to make it fatal (e.g. for release builds).
+    const fatal = process.env.REQUIRE_SERVER_BUNDLE === '1';
+    const log = fatal ? console.error : console.warn;
+    log(`${fatal ? 'Cannot bundle' : 'Skipping bundle of'} Obrenna-Server: ${required} is missing in ${serverRoot}.`);
+    if (required.includes('panel_dist')) log('Build the control panel first: cd Obrenna-Server/control-panel && npm install && npm run build');
+    process.exit(fatal ? 1 : 0);
   }
 }
 
