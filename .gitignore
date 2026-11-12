@@ -6,3 +6,5 @@ dist
 .env
 .env.local
 *.log
+public/install/obrenna-server.tar.gz
+public/install/obrenna-server.tar.gz.sha256

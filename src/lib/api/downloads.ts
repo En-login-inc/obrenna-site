@@ -67,11 +67,20 @@ export async function getLatestDesktopRelease(): Promise<DesktopRelease> {
   }
 }
 
+export interface ServerInstallCommands {
+  unix: string;
+  windows: string;
+}
+
 /**
- * Agent installation is organization-scoped and enrollment-credential based.
- * The public download page can no longer show a generic one-liner; admins get
- * their command from the machines portal after issuing an enrollment token.
+ * One-line installers for Obrenna-Server. The bootstrap scripts and the
+ * server bundle are served by this site under /install (see
+ * scripts/build-server-bundle.mjs), so the commands point at the site origin.
  */
-export function getAgentInstallCommand(): string | null {
-  return null;
+export function getServerInstallCommands(origin: string): ServerInstallCommands {
+  const site = origin.replace(/\/+$/, '');
+  return {
+    unix: `curl -fsSL ${site}/install/server.sh | bash -s -- --site ${site}`,
+    windows: `$env:OBRENNA_SITE_URL='${site}'; irm ${site}/install/server.ps1 | iex`,
+  };
 }

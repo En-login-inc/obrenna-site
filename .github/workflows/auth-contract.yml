@@ -30,6 +30,8 @@ jobs:
         with:
           repository: En-login-inc/Obrenna
           path: GrebGlob
+          # Obrenna is private; the default GITHUB_TOKEN cannot read it.
+          token: ${{ secrets.OBRENNA_REPO_TOKEN }}
           fetch-depth: 1
       - uses: actions/setup-node@v4
         with:

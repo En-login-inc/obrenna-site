@@ -4,8 +4,8 @@
   "type": "module",
   "version": "0.1.0",
   "scripts": {
-    "dev": "astro dev",
-    "build": "astro check && astro build",
+    "dev": "node scripts/build-server-bundle.mjs && astro dev",
+    "build": "npm run bundle:server && astro check && astro build",
     "preview": "astro preview",
     "deploy:cloudflare": "wrangler deploy --config dist/server/wrangler.json",
     "typecheck": "astro check",
@@ -15,7 +15,8 @@
     "test:auth:desktop-postgres": "node scripts/verify-desktop-auth-flow.mjs",
     "setup:auth-db": "powershell -NoProfile -ExecutionPolicy Bypass -File ./server-db/scripts/setup-auth-db.ps1",
     "setup:auth-db:sh": "bash ./server-db/scripts/setup-auth-db.sh",
-    "migrate:auth-db": "node ./scripts/migrate-auth-db.mjs"
+    "migrate:auth-db": "node ./scripts/migrate-auth-db.mjs",
+    "bundle:server": "node scripts/build-server-bundle.mjs"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.4",

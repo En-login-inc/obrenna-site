@@ -727,3 +727,7 @@ svg { flex: 0 0 auto; }
   .real-machine-table .table-head { display:none; }
   .real-machine-table .table-row { grid-template-columns:1fr; gap:10px; }
 }
+
+.install-label { display:block; margin-top:18px; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:#728482; }
+.install-label + .code-line { margin-top:8px; }
+.agent-scope-note code { font-family:var(--font-mono); font-size:11px; color:#a9d8d6; }

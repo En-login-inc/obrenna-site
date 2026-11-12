@@ -366,7 +366,7 @@ async function handleDesktopExchange({ request }: { request: Request; url: URL; 
 }
 
 async function handleDesktopSession({ request, url }: { request: Request; url: URL; route: string }) {
-  const returnTo = url.searchParams.get('returnTo') || '/portal/admin';
+  const returnTo = url.searchParams.get('returnTo') || '/download';
   if (!returnTo.startsWith('/') || returnTo.startsWith('//')) {
     return buildError('A relative return path is required', 400);
   }

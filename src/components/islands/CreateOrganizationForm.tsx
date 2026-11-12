@@ -27,7 +27,7 @@ export default function CreateOrganizationForm({ desktopCallback }: CreateOrgani
           window.location.href = callbackUrl;
         }, 100);
       } else {
-        window.location.href = "/portal/admin";
+        window.location.href = "/download";
       }
     } else {
       setSubmitting(false);
