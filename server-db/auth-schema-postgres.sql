@@ -163,6 +163,24 @@ CREATE TABLE IF NOT EXISTS inference_clients (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS user_identities (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    issuer VARCHAR(512) NOT NULL,
+    subject VARCHAR(255) NOT NULL,
+    email VARCHAR(255),
+    email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (issuer, subject)
+);
+
+CREATE TABLE IF NOT EXISTS oidc_auth_requests (
+    state VARCHAR(128) PRIMARY KEY,
+    payload JSONB NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_organization_memberships_user ON organization_memberships(user_id);
 CREATE INDEX IF NOT EXISTS idx_organization_memberships_org ON organization_memberships(organization_id);
@@ -175,6 +193,8 @@ CREATE INDEX IF NOT EXISTS idx_inference_install_tokens_org ON inference_install
 CREATE INDEX IF NOT EXISTS idx_inference_clients_org ON inference_clients(organization_id);
 CREATE INDEX IF NOT EXISTS idx_inference_clients_host ON inference_clients(host_id);
 CREATE INDEX IF NOT EXISTS idx_inference_enrollment_codes_org ON inference_enrollment_codes(organization_id);
+CREATE INDEX IF NOT EXISTS idx_user_identities_user ON user_identities(user_id);
+CREATE INDEX IF NOT EXISTS idx_oidc_auth_requests_expiry ON oidc_auth_requests(expires_at);
 
 INSERT INTO plans (code, name, price_cents, currency, interval, features)
 VALUES

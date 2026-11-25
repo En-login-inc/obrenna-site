@@ -9,9 +9,11 @@ interface SignInFormProps {
     fullName: string;
     email: string;
   };
+  ssoEnabled?: boolean;
+  ssoError?: boolean;
 }
 
-export default function SignInForm({ desktopCallback, currentUser }: SignInFormProps) {
+export default function SignInForm({ desktopCallback, currentUser, ssoEnabled = false, ssoError = false }: SignInFormProps) {
   const [submitting, setSubmitting] = useState(false);
   const [desktopHandoff, setDesktopHandoff] = useState(false);
   const [useDifferentAccount, setUseDifferentAccount] = useState(!currentUser);
@@ -67,12 +69,24 @@ export default function SignInForm({ desktopCallback, currentUser }: SignInFormP
     );
   }
 
+  const ssoHref = desktopCallback
+    ? `/api/auth/oidc/login?${getDesktopContinuationQuery(desktopCallback)}`
+    : '/api/auth/oidc/login';
+
   return (
     <form className="auth-card" onSubmit={handleSubmit}>
       <div className="auth-card-head">
         <h2>Sign in to Obrenna</h2>
         <p>Use your organization credentials.</p>
       </div>
+      {ssoError && (
+        <p className="auth-switch" role="alert">Single sign-in failed. Try again, or use your email and password.</p>
+      )}
+      {ssoEnabled && (
+        <a className="button full-button" href={ssoHref}>
+          Continue with SSO <ArrowRight size={16} />
+        </a>
+      )}
       <label>
         Work email
         <input name="email" placeholder="name@company.com" type="email" required />

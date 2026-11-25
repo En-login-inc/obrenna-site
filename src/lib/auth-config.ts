@@ -29,3 +29,25 @@ export function getAuthSessionTtlMs() {
 export const authRuntime = {
   isLocalMode: authEnvSchema.APP_ENV !== 'production',
 };
+
+export type OidcConfig = {
+  issuer: string;
+  clientId: string;
+  clientSecret: string;
+  scopes: string;
+};
+
+export function oidcConfig(): OidcConfig | null {
+  const issuer = process.env.OIDC_ISSUER?.trim().replace(/\/$/, '');
+  const clientId = process.env.OIDC_CLIENT_ID?.trim();
+  if (!issuer || !clientId) return null;
+  if (new URL(issuer).protocol !== 'https:' && process.env.APP_ENV === 'production') {
+    throw new Error('OIDC_ISSUER must use HTTPS in production');
+  }
+  return {
+    issuer,
+    clientId,
+    clientSecret: process.env.OIDC_CLIENT_SECRET ?? '',
+    scopes: process.env.OIDC_SCOPES?.trim() || 'openid profile email',
+  };
+}
