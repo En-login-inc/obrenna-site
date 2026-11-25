@@ -1,12 +1,27 @@
 import type { APIRoute } from 'astro';
 import { createHash, randomBytes } from 'node:crypto';
-import { authConfig } from '../../../lib/auth-config';
+import { authConfig, oidcConfig } from '../../../lib/auth-config';
 import { buildError, getBearerToken, getCookieValue } from '../../../lib/auth-helpers';
 import { withAuthDb } from '../../../lib/auth-db';
 import { billingSyncStatus, unavailableBillingPortal } from '../../../lib/billing-status';
 import { signInferenceGrant, verifyInferenceGrant } from '../../../lib/inference-grants';
 import { checkInferenceGrantStatus } from '../../../lib/inference-grant-status';
 import { handleOrganizationMembers as handleOrganizationMembersRequest } from '../../../lib/organization-members';
+import {
+  buildOidcAuthorizationUrl,
+  consumeOidcRequest,
+  discoverOidc,
+  exchangeOidcCode,
+  generateOidcNonce,
+  generateOidcState,
+  generatePkceVerifier,
+  pkceChallenge,
+  provisionOidcUser,
+  remoteJwks,
+  storeOidcRequest,
+  verifyOidcIdToken,
+  type OidcRequestPayload,
+} from '../../../lib/oidc';
 
 type AuthRouteHandler = (input: { request: Request; url: URL; route: string }) => Promise<Response>;
 
@@ -29,6 +44,8 @@ const routeMap: Record<string, AuthRouteHandler> = {
   'inference-machines/revoke': handleRevokeInferenceMachine,
   'inference-model-access': handleInferenceModelAccess,
   'organization-members': handleOrganizationMembersRoute,
+  'oidc/login': handleOidcLogin,
+  'oidc/callback': handleOidcCallback,
 };
 
 function getRoute(params: Record<string, unknown> | undefined) {
@@ -787,6 +804,123 @@ async function handleInferenceModelAccess({ request, url }: { request: Request; 
       throw error;
     }
   });
+}
+
+async function handleOidcLogin({ url }: { request: Request; url: URL; route: string }) {
+  let config;
+  try {
+    config = oidcConfig();
+  } catch {
+    config = null;
+  }
+  if (!config) return buildError('Single sign-in is not configured', 404);
+
+  const desktopCallback = url.searchParams.get('desktop_callback');
+  const codeChallenge = url.searchParams.get('code_challenge') ?? '';
+  const desktopState = url.searchParams.get('state') ?? '';
+  let desktop: OidcRequestPayload['desktop'] = null;
+  if (desktopCallback) {
+    if (desktopCallback !== 'obrenna://auth') return buildError('A valid desktop callback is required', 400);
+    if (!/^[A-Za-z0-9_-]{43}$/.test(codeChallenge)) return buildError('An S256 PKCE challenge is required', 400);
+    if (!/^[A-Za-z0-9_-]{32,128}$/.test(desktopState)) return buildError('A valid state value is required', 400);
+    desktop = { callback: desktopCallback, codeChallenge, state: desktopState };
+  }
+  const returnToParam = url.searchParams.get('returnTo');
+  const returnTo = returnToParam && returnToParam.startsWith('/') && !returnToParam.startsWith('//')
+    ? returnToParam
+    : null;
+
+  try {
+    const discovery = await discoverOidc(config.issuer);
+    const state = generateOidcState();
+    const nonce = generateOidcNonce();
+    const verifier = generatePkceVerifier();
+    const challenge = await pkceChallenge(verifier);
+    const redirectUri = `${url.origin}/api/auth/oidc/callback`;
+    await withAuthDb((client) => storeOidcRequest(client, state, { nonce, verifier, redirectUri, returnTo, desktop }));
+    const authorizationUrl = buildOidcAuthorizationUrl(config, discovery, {
+      state, nonce, codeChallenge: challenge, redirectUri,
+    });
+    return new Response(null, {
+      status: 302,
+      headers: { Location: authorizationUrl, 'Cache-Control': 'no-store' },
+    });
+  } catch (error) {
+    console.error('OIDC login start failed', error);
+    return Response.redirect(`${url.origin}/sign-in?error=sso`, 302);
+  }
+}
+
+async function handleOidcCallback({ url }: { request: Request; url: URL; route: string }) {
+  const signInUrl = `${url.origin}/sign-in`;
+  let config;
+  try {
+    config = oidcConfig();
+  } catch {
+    config = null;
+  }
+  if (!config) return Response.redirect(`${signInUrl}?error=sso`, 302);
+  const errorParam = url.searchParams.get('error');
+  const code = url.searchParams.get('code') ?? '';
+  const state = url.searchParams.get('state') ?? '';
+  if (errorParam || !code || !state) return Response.redirect(`${signInUrl}?error=sso`, 302);
+
+  try {
+    const discovery = await discoverOidc(config.issuer);
+    const result = await withAuthDb(async (client) => {
+      const request = await consumeOidcRequest(client, state);
+      if (!request) return null;
+      const idToken = await exchangeOidcCode(config, discovery, {
+        code, redirectUri: request.redirectUri, codeVerifier: request.verifier,
+      });
+      const claims = await verifyOidcIdToken(idToken, config, request.nonce, remoteJwks(discovery.jwksUri));
+      await client.query('BEGIN');
+      try {
+        const user = await provisionOidcUser(client, config.issuer, claims);
+        const sessionToken = crypto.randomUUID().toString();
+        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        const sessionResult = await client.query(
+          `INSERT INTO auth_sessions (id, user_id, session_token, expires_at, status, created_at)
+           VALUES (gen_random_uuid(), $1, $2, $3, 'active', NOW())
+           RETURNING id`,
+          [user.id, sessionToken, expiresAt],
+        );
+        let location: string;
+        if (request.desktop) {
+          location = await issueDesktopAuthorizationCode(
+            client, sessionResult.rows[0].id,
+            request.desktop.callback, request.desktop.codeChallenge, request.desktop.state,
+          );
+        } else {
+          const org = await client.query(
+            "SELECT 1 FROM organization_memberships WHERE user_id = $1 AND status = 'active' LIMIT 1",
+            [user.id],
+          );
+          location = request.returnTo ?? (org.rowCount ? '/download' : '/onboarding/create-organization');
+        }
+        await client.query('COMMIT');
+        return {
+          sessionToken,
+          location: location.startsWith('/') ? `${url.origin}${location}` : location,
+        };
+      } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+      }
+    });
+    if (!result) return Response.redirect(`${signInUrl}?error=sso`, 302);
+    return new Response(null, {
+      status: 302,
+      headers: {
+        Location: result.location,
+        'Set-Cookie': `${authConfig.cookieName}=session:${result.sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000`,
+        'Cache-Control': 'no-store',
+      },
+    });
+  } catch (error) {
+    console.error('OIDC callback failed', error);
+    return Response.redirect(`${signInUrl}?error=sso`, 302);
+  }
 }
 
 async function hashPassword(password: string) {
