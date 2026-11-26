@@ -44,14 +44,20 @@ const flowSteps: Array<[string, string]> = [
               <div class="download-meta">
                 {release.available ? (
                   <>
-                    <span><Icon name="badge-check" size={14} /> Digitally signed</span>
                     <span><Icon name="package-check" size={14} /> SHA-256 checksum</span>
-                    <span><Icon name="refresh-ccw" size={14} /> Managed upgrades</span>
+                    <span><Icon name="shield-alert" size={14} /> Pilot build — unsigned</span>
                   </>
                 ) : (
                   <span><Icon name="clock" size={14} /> No release is currently published</span>
                 )}
               </div>
+              {release.available && (
+                <p class="install-note">
+                  Pilot installers are not code-signed yet. Windows: if SmartScreen appears, choose
+                  <b> More info → Run anyway</b>. macOS: right-click the app and choose <b>Open</b> the first time.
+                  Verify the SHA-256 checksum if your policy requires it.
+                </p>
+              )}
             </article>
             <article class="download-card">
               <div class="download-card-head"><IconBox icon="server" /><span>FOR IT ADMINISTRATORS</span></div>

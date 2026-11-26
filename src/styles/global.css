@@ -309,6 +309,7 @@ svg { flex: 0 0 auto; }
 .download-box b { font-size:13px; display:block; }.download-box small { color:#728482; font-size:10px; }
 .download-meta { display:flex; gap:16px; margin-top:18px; flex-wrap:wrap; }.download-meta.vertical { flex-direction:column; gap:10px; }
 .download-meta span { display:flex; gap:6px; align-items:center; font-size:11px; color:#8a9c98; }.download-meta svg { width:14px; color:var(--teal); }
+.install-note { margin-top:10px; font-size:11px; line-height:1.55; color:#8a9895; }.install-note b { color:#5d6f6b; font-weight:650; }
 .code-line { margin-top:22px; border:1px solid rgba(255,255,255,.1); background:#04090a; border-radius:8px; padding:12px 14px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
 .code-line code { font-family:var(--font-mono); font-size:11px; color:#a9d8d6; overflow-x:auto; white-space:nowrap; }
 .code-line button { background:transparent; border:0; color:#728482; cursor:pointer; }
