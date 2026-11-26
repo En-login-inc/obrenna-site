@@ -79,7 +79,7 @@ function getRedirectAfterAuth(hasOrganization = false): string {
     return returnTo;
   }
 
-  return hasOrganization ? '/portal/admin' : '/onboarding/create-organization';
+  return hasOrganization ? '/download' : '/onboarding/create-organization';
 }
 
 export async function signIn(payload: SignInPayload): Promise<AuthResult> {

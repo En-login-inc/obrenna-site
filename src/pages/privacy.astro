@@ -6,8 +6,8 @@ import PageHero from "../components/PageHero.astro";
 import Eyebrow from "../components/Eyebrow.astro";
 import Icon from "../components/Icon.astro";
 
-const cloudData = ["Account identity", "Organization membership", "Invitations", "Device enrollment metadata", "Machine and service health", "Tool schema hashes", "Policy configuration", "Redacted confirmation metadata"];
-const localData = ["Prompts and chat history", "Model inputs and outputs", "MCP arguments and results", "Private files and documents", "Data-store responses", "MCP credentials and API keys", "Local model memory", "Tool execution contents"];
+const websiteData = ["Account email and name (only if you create one)", "Organization membership (optional organization mode)", "Desktop installers and checksums", "Nothing from the self-hosted server"];
+const localData = ["Admin accounts and signed-in people", "Machine credentials (hashed)", "Guardrails and MCP tool policies", "Local audit log", "Prompts, files and model outputs (on employee devices; not stored by the server)", "MCP credentials and API keys", "Local model memory"];
 const limitations = [
   "Local MCP executables are trusted software, not sandboxed code.",
   "Schema approval confirms what changed; it does not prove a tool is safe.",
@@ -23,12 +23,12 @@ const limitations = [
       <PageHero
         eyebrow="Privacy"
         title={`A privacy promise you can <span>draw as a boundary.</span>`}
-        body="Obrenna keeps its cloud responsibilities intentionally narrow. The private data plane—where real work happens—runs in your organization's environment."
+        body="The self-hosted product keeps everything on your machine. Here is exactly what lives where — and the little that can leave your network."
       >
         <div class="privacy-badges">
           <span><Icon name="shield-check" size={14} /> No prompt storage by default</span>
-          <span><Icon name="lock-keyhole" size={14} /> No plaintext MCP secrets</span>
-          <span><Icon name="scan-line" size={14} /> Redacted operational telemetry</span>
+          <span><Icon name="lock-keyhole" size={14} /> Credentials hashed at rest</span>
+          <span><Icon name="scan-line" size={14} /> Local, exportable audit log</span>
         </div>
       </PageHero>
 
@@ -36,16 +36,16 @@ const limitations = [
         <div class="container">
           <div class="section-heading split-heading">
             <div><Eyebrow>DATA RESPONSIBILITY</Eyebrow><h2>What goes where.</h2></div>
-            <p>Configuration and operational metadata travel through the control plane. Sensitive work stays within the infrastructure your organization manages.</p>
+            <p>Accounts, policies and the audit log live in the server's local database. Sensitive work stays on the devices and network your organization manages.</p>
           </div>
           <div class="data-columns">
             <article class="cloud-data">
-              <div class="data-title"><Icon name="cloud-cog" /><span><b>Obrenna cloud</b><small>Identity & control metadata</small></span></div>
-              <ul>{cloudData.map((x) => <li><Icon name="check" size={14} />{x}</li>)}</ul>
+              <div class="data-title"><Icon name="cloud-cog" /><span><b>Obrenna website</b><small>Optional account &amp; downloads</small></span></div>
+              <ul>{websiteData.map((x) => <li><Icon name="check" size={14} />{x}</li>)}</ul>
             </article>
-            <div class="data-divider"><Icon name="shield-check" /><span>Boundary enforced by architecture and policy</span></div>
+            <div class="data-divider"><Icon name="shield-check" /><span>The self-hosted server sends nothing to the website</span></div>
             <article class="local-data">
-              <div class="data-title"><Icon name="lock-keyhole" /><span><b>Organization infrastructure</b><small>Private data plane</small></span></div>
+              <div class="data-title"><Icon name="lock-keyhole" /><span><b>Your infrastructure</b><small>Server + employee devices</small></span></div>
               <ul>{localData.map((x) => <li><Icon name="check" size={14} />{x}</li>)}</ul>
             </article>
           </div>
@@ -58,13 +58,13 @@ const limitations = [
           <div class="transmission-grid">
             <article>
               <span class="transmit-icon yes"><Icon name="arrow-right" /></span>
-              <h3>Sent to the control plane</h3>
-              <p>Authentication, membership operations, signed configuration sync, device heartbeats, health metadata and optional diagnostics.</p>
+              <h3>What can leave your network</h3>
+              <p>Authentication traffic to your own identity provider during company sign-in (only if enabled), optional website sign-in if you choose to use an Obrenna account, and installer downloads from this site.</p>
             </article>
             <article>
               <span class="transmit-icon no"><Icon name="x" /></span>
               <h3>Not sent by default</h3>
-              <p>Prompts, chat content, documents, model outputs, MCP tool arguments, tool results, private API keys or data-store responses.</p>
+              <p>Prompts, chat content, documents, model outputs, MCP tool arguments, tool results, private API keys or data-store responses. The self-hosted server stores none of this and forwards none of it to Obrenna.</p>
             </article>
           </div>
         </div>

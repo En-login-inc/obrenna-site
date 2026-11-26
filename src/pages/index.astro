@@ -9,7 +9,7 @@ import { getPortalAccount } from "../lib/portal-account";
 
 const account = await getPortalAccount(Astro.request);
 if (account) {
-  return Astro.redirect(routes.admin);
+  return Astro.redirect(routes.download);
 }
 
 const homeLimitations = [
@@ -43,7 +43,7 @@ const homePersonas = [
   {
     num: "3",
     title: "For employees",
-    body: "Download, sign in, and start using your organization's approved AI workspace.",
+    body: "Download the app, enter your server address, sign in with your company account, and use the models your admin approved.",
     label: "Get the desktop app",
     href: routes.download,
   },
@@ -100,28 +100,28 @@ const homePersonas = [
             <div class="home-model-head-left">
               <h2>One experience.<br />A clear boundary.</h2>
             </div>
-            <p>Obrenna keeps the parts that govern access intentionally separate from the parts that process your organization's work.</p>
+            <p>Governance and model hosting run on your server; the work itself happens on employee devices. Nothing passes through an Obrenna cloud.</p>
           </div>
           <div class="home-model-diagram">
             <div class="home-model-card home-model-control">
-              <span class="home-model-label">OBRENNA</span>
-              <h3>Control plane</h3>
-              <p>Identity, membership, approved policy and bounded service health.</p>
+              <span class="home-model-label">YOUR ORGANIZATION</span>
+              <h3>Obrenna-Server</h3>
+              <p>Models, gateway, guardrails, people and the audit log — on a machine you own.</p>
               <div class="home-model-tags">
-                <span>Identity</span><span>Policy</span><span>Audit</span>
+                <span>Models</span><span>Policy</span><span>Audit</span>
               </div>
             </div>
             <div class="home-model-link">
-              <span>Approved configuration</span>
+              <span>Company sign-in or enrollment code</span>
               <span class="home-model-link-rule"></span>
-              <span>Health metadata only</span>
+              <span>Stays on your LAN or VPN</span>
             </div>
             <div class="home-model-card home-model-data">
-              <span class="home-model-label">YOUR ORGANIZATION</span>
-              <h3>Private data plane</h3>
-              <p>Models, files, prompts, MCP tools and their results stay where your team operates them.</p>
+              <span class="home-model-label">EMPLOYEE DEVICES</span>
+              <h3>Obrenna Desktop</h3>
+              <p>Prompts, files, MCP tools and their results stay on the devices your team uses.</p>
               <div class="home-model-tags">
-                <span>Models</span><span>Tools</span><span>Data</span>
+                <span>Prompts</span><span>Files</span><span>Tools</span>
               </div>
             </div>
           </div>

@@ -6,11 +6,14 @@ import Eyebrow from "../components/Eyebrow.astro";
 import Icon from "../components/Icon.astro";
 import SignInForm from "../components/islands/SignInForm";
 import { getAuthenticatedUser } from "../lib/portal-account";
+import { oidcEnabled } from "../lib/oidc";
 
 // Desktop callback parameters continue through the normal website sign-in; after authentication,
 // the site issues only a short-lived, single-use PKCE authorization code to the native callback.
 const desktopCallback = Astro.url.searchParams.get('desktop_callback');
 const currentUser = desktopCallback ? await getAuthenticatedUser(Astro.request) : null;
+const ssoEnabled = oidcEnabled();
+const ssoError = Astro.url.searchParams.get('error') === 'sso';
 ---
 
 <BaseLayout title="Sign in | Obrenna">
@@ -20,9 +23,9 @@ const currentUser = desktopCallback ? await getAuthenticatedUser(Astro.request) 
     <div class="auth-copy">
       <Eyebrow>ORGANIZATION-OWNED AI</Eyebrow>
       <h1>Welcome back.</h1>
-      <p>Sign in to manage your organization or connect your desktop app.</p>
+      <p>Sign in to connect your desktop app to an Obrenna organization. Using a self-hosted Obrenna-Server? Employees sign in inside the app with their company account — no website account needed.</p>
       <div class="auth-architecture">
-        <div><Icon name="cloud-cog" /><span><b>Obrenna control plane</b><small>Identity · policy · health</small></span></div>
+        <div><Icon name="cloud-cog" /><span><b>Obrenna account</b><small>Optional · identity &amp; organizations</small></span></div>
         <span class="auth-line"><Icon name="lock-keyhole" size={16} /></span>
         <div><Icon name="server" /><span><b>Your private infrastructure</b><small>Models · tools · company data</small></span></div>
       </div>
@@ -31,6 +34,8 @@ const currentUser = desktopCallback ? await getAuthenticatedUser(Astro.request) 
       client:load
       desktopCallback={desktopCallback || undefined}
       currentUser={currentUser || undefined}
+      ssoEnabled={ssoEnabled}
+      ssoError={ssoError}
     />
   </main>
 </BaseLayout>

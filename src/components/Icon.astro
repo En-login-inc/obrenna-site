@@ -4,9 +4,6 @@
  * "shield-check"). Using the static SVG set (not lucide-react) keeps
  * every icon a zero-JS static element, matching Astro's island model.
  */
-import fs from "node:fs";
-import path from "node:path";
-
 interface Props {
   name: string;
   size?: number;
@@ -14,22 +11,17 @@ interface Props {
   class?: string;
 }
 
+// Bundled at build time: the Cloudflare runtime has no filesystem to read
+// node_modules from, so the SVG sources must travel with the worker.
+const icons = import.meta.glob<{ default: string }>("/node_modules/lucide-static/icons/*.svg", {
+  query: "?raw",
+});
+
 const { name, size = 20, strokeWidth = 2, class: className = "" } = Astro.props;
 
-const svgPath = path.join(
-  process.cwd(),
-  "node_modules/lucide-static/icons",
-  `${name}.svg`
-);
-
-let inner = "";
-try {
-  const raw = fs.readFileSync(svgPath, "utf-8");
-  const match = raw.match(/<svg[^>]*>([\s\S]*)<\/svg>/);
-  inner = match ? match[1] : "";
-} catch {
-  inner = "";
-}
+const load = icons[`/node_modules/lucide-static/icons/${name}.svg`];
+const raw = load ? (await load()).default : "";
+const inner = raw.match(/<svg[^>]*>([\s\S]*)<\/svg>/)?.[1] ?? "";
 ---
 
 <svg
