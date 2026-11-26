@@ -77,7 +77,7 @@ export default function SignInForm({ desktopCallback, currentUser, ssoEnabled = 
     <form className="auth-card" onSubmit={handleSubmit}>
       <div className="auth-card-head">
         <h2>Sign in to Obrenna</h2>
-        <p>Use your organization credentials.</p>
+        <p>Use your Obrenna account, or your company's SSO if enabled.</p>
       </div>
       {ssoError && (
         <p className="auth-switch" role="alert">Single sign-in failed. Try again, or use your email and password.</p>

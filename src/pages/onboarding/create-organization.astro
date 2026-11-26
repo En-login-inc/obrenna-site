@@ -10,9 +10,9 @@ const desktopCallback = Astro.url.searchParams.get('desktop_callback');
   <OnboardingShell>
     <section class="onboarding-content">
       <div class="onboarding-title">
-        <span>STEP 1 OF 4</span>
+        <span>ORGANIZATION SETUP</span>
         <h1>Create your organization</h1>
-        <p>This becomes the secure home for your members, private machines, models and tool policies.</p>
+        <p>This creates your organization's identity on Obrenna. For a fully self-hosted setup, Obrenna-Server's own control panel manages machines, models and policies on your machine instead.</p>
       </div>
       <CreateOrganizationForm client:load desktopCallback={desktopCallback || undefined} />
     </section>

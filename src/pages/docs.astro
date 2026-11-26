@@ -1,109 +1,179 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import PublicHeader from "../components/PublicHeader.astro";
+import PublicFooter from "../components/PublicFooter.astro";
 import Eyebrow from "../components/Eyebrow.astro";
 import Icon from "../components/Icon.astro";
 import CopyCodeButton from "../components/islands/CopyCodeButton";
+import { routes } from "../lib/routes";
+import { getServerInstallCommands } from "../lib/api/downloads";
 
-const installScript = `# Current developer/setup flow
-dev.ps1
-
-# Install the local browser dependency when needed
-cd backend
-python -m playwright install chromium
-
-# Pull example local models
-ollama pull qwen3.5-9b-claude-opus-reasoning-distilled
-ollama pull granite4.0-h-micro-3b
-ollama pull qwen3.5-0.8b`;
+const serverInstall = getServerInstallCommands(Astro.url.origin);
 ---
 
-<BaseLayout title="Documentation | Obrenna" pageClass="docs-page">
+<BaseLayout title="Setup guide | Obrenna" pageClass="docs-page">
   <PublicHeader />
   <main class="docs-shell">
-    <aside class="docs-sidebar docs-disabled" aria-disabled="true">
-      <div class="docs-search"><Icon name="search" size={14} /><span>Search documentation</span><kbd>⌘K</kbd></div>
+    <aside class="docs-sidebar">
       <strong>GET STARTED</strong>
-      <a class="active">Overview</a>
-      <a>Architecture</a>
-      <a>Network requirements</a>
+      <a href="#overview" class="active">Overview</a>
+      <a href="#how-it-works">How it works</a>
       <strong>FOR ADMINISTRATORS</strong>
-      <a>Deploy organization agent</a>
-      <a>Configure Ollama or vLLM</a>
-      <a>Connect an MCP server</a>
-      <a>Approve tool policies</a>
+      <a href="#install">1 · Install the server</a>
+      <a href="#first-run">2 · First-run setup</a>
+      <a href="#models">3 · Models &amp; guardrails</a>
+      <a href="#company-sign-in">4 · Company sign-in (Entra ID)</a>
+      <a href="#enrollment-codes">Enrollment codes (fallback)</a>
       <strong>FOR EMPLOYEES</strong>
-      <a>Install desktop</a>
-      <a>Join an organization</a>
-      <a>Troubleshooting</a>
+      <a href="#connect">Connect the desktop app</a>
       <strong>REFERENCE</strong>
-      <a>Security model</a>
-      <a>Data privacy</a>
-      <a>CLI reference</a>
+      <a href="#network">Network &amp; ports</a>
+      <a href="#data">Where data lives</a>
+      <a href="#troubleshooting">Troubleshooting</a>
     </aside>
     <article class="docs-article">
-      <div class="docs-breadcrumb">Documentation <Icon name="chevron-right" size={12} /> Get started <Icon name="chevron-right" size={12} /> Overview</div>
-      <div class="docs-construction-notice" role="status">
-        <Icon name="construction" size={20} />
-        <div>
-          <b>Documentation is under construction</b>
-          <p>This page is under construction and will be available in the future.</p>
-        </div>
-        <button class="docs-back-button" type="button">
-          <Icon name="arrow-left" size={14} />
-          Back to previous page
-        </button>
-      </div>
-      <div class="docs-disabled" aria-disabled="true">
+      <div class="docs-breadcrumb">Documentation <Icon name="chevron-right" size={12} /> Get started <Icon name="chevron-right" size={12} /> Setup guide</div>
+
+      <section id="overview">
         <Eyebrow>GET STARTED</Eyebrow>
-        <h1>Run a local-first AI workspace your organization can operate.</h1>
-        <p class="docs-lead">Obrenna runs its control plane, agent runtime, registry, policies and local state on the desktop. Remote model or MCP services are optional and explicitly configured.</p>
+        <h1>Private AI for your team, on one machine you own.</h1>
+        <p class="docs-lead">
+          Obrenna-Server turns a computer on your network into a private AI service: it runs the models,
+          enforces your policies, and lets employees connect the Obrenna desktop app with their company
+          account. Nothing is sent to the Obrenna website.
+        </p>
         <div class="docs-callout">
           <Icon name="shield-check" size={19} />
-          <div><b>Before you begin</b><p>Use the current desktop developer setup, a local Ollama installation or another OpenAI-compatible endpoint, and any MCP servers you intend to connect. Public installer, enrollment-code and remote control-plane workflows: NA.</p></div>
+          <div><b>Before you begin</b><p>You need one always-on computer (Windows, macOS or Linux) on the same network as your team — or reachable by VPN — and, for company sign-in, permission to register an app in your organization's Microsoft Entra tenant. Employees need nothing but the desktop app.</p></div>
         </div>
-        <h2>Current architecture</h2>
+      </section>
+
+      <section id="how-it-works">
+        <h2>How it works</h2>
         <div class="docs-steps">
-          <div><b>1</b><span><strong>Tauri desktop shell</strong><p>Owns local process lifecycle, permissions and the desktop UI.</p></span><a>Implemented</a></div>
-          <div><b>2</b><span><strong>FastAPI backend</strong><p>Handles orchestration, MCP registry and routing, policies, confirmations and local APIs.</p></span><a>Implemented</a></div>
-          <div><b>3</b><span><strong>Local state and runtime</strong><p>SQLite, local files, memory and JSONL telemetry remain on the machine by default.</p></span><a>Implemented</a></div>
-          <div><b>4</b><span><strong>Optional remote services</strong><p>Prompts, responses, tool arguments and results leave the machine only for explicitly configured remote endpoints.</p></span><a>Available</a></div>
+          <div><b>1</b><span><strong>Obrenna-Server (your machine)</strong><p>Model gateway on port 8787, a local control panel on port 8788, and Ollama on loopback. Accounts, policies, credentials and the audit log live in its local database.</p></span></div>
+          <div><b>2</b><span><strong>Obrenna Desktop (each employee)</strong><p>Connects to the server address, signs in with the company identity provider, and chats with the models you approved. Prompts and answers stay on your network.</p></span></div>
+          <div><b>3</b><span><strong>Your identity provider (optional)</strong><p>With company sign-in configured, employees authenticate against your own Microsoft Entra tenant during sign-in. No Obrenna account is involved.</p></span></div>
+        </div>
+      </section>
+
+      <section id="install">
+        <h2>1 · Install the server</h2>
+        <p class="docs-lead">Run one command on the computer that will host your models. It installs Python and Ollama if missing, verifies the download, and starts the server.</p>
+        <div class="docs-code">
+          <div><span>macOS &amp; Linux</span><CopyCodeButton text={serverInstall.unix} label="Copy" client:load /></div>
+          <pre><code>{serverInstall.unix}</code></pre>
         </div>
         <div class="docs-code">
-          <div>
-            <span>Current local setup examples</span>
-            <CopyCodeButton text={installScript} label="Copy" client:load />
-          </div>
-          <pre><code>{installScript}</code></pre>
+          <div><span>Windows (PowerShell)</span><CopyCodeButton text={serverInstall.windows} label="Copy" client:load /></div>
+          <pre><code>{serverInstall.windows}</code></pre>
+        </div>
+        <p class="docs-lead">When it finishes, the gateway is running on port <code>8787</code> and the control panel is available at <code>http://localhost:8788</code> on that computer only.</p>
+      </section>
+
+      <section id="first-run">
+        <h2>2 · First-run setup</h2>
+        <div class="docs-steps">
+          <div><b>1</b><span><strong>Open the panel</strong><p>On the server computer, open <code>http://localhost:8788</code> (or type <code>/panel</code> in the server terminal).</p></span></div>
+          <div><b>2</b><span><strong>Create the owner account</strong><p>Name your organization and create the first admin account. This is a local panel account — separate from any company identity.</p></span></div>
+          <div><b>3</b><span><strong>Set the server address (optional)</strong><p>Settings → Server address gives the machine a friendly local name, e.g. <code>advancement</code> → <code>http://advancement.local:8787</code>, so staff don't need an IP address.</p></span></div>
+        </div>
+      </section>
+
+      <section id="models">
+        <h2>3 · Models &amp; guardrails</h2>
+        <div class="docs-steps">
+          <div><b>1</b><span><strong>Pull a model</strong><p>On the Models page, pull a model that fits the hardware — an 8B-class model for a modest machine, a 30–35B mixture-of-experts model for ~32&nbsp;GB+ RAM or a capable GPU.</p></span></div>
+          <div><b>2</b><span><strong>Allow it</strong><p>Guardrails → add the exact model ID to the allow-list. Employees can only use models on this list.</p></span></div>
+          <div><b>3</b><span><strong>Set limits</strong><p>Requests per minute, input/output size limits, blocked terms and sensitive-data detection. Changes apply immediately.</p></span></div>
+        </div>
+      </section>
+
+      <section id="company-sign-in">
+        <h2>4 · Company sign-in (Microsoft Entra ID)</h2>
+        <p class="docs-lead">
+          Instead of handing out codes, employees connect with their normal company login. Each sign-in is
+          tied to a person: the Machines page shows who a device belongs to, and People lets you suspend
+          someone's access instantly. Any OIDC provider with device-flow support works the same way.
+        </p>
+        <div class="docs-steps">
+          <div><b>1</b><span><strong>Register an Entra app (one-time)</strong><p>Single tenant, no redirect URI. Under Authentication, enable <strong>Allow public client flows</strong>. Add delegated Microsoft Graph permissions: <code>openid</code>, <code>profile</code>, <code>email</code>. No client secret is needed. You may need central IT to do this.</p></span></div>
+          <div><b>2</b><span><strong>Configure the server</strong><p>Panel → Settings → Company sign-in. Issuer URL: <code>https://login.microsoftonline.com/&lt;tenant-id&gt;/v2.0</code> (your tenant ID, not <code>common</code>). Paste the Application (client) ID and save.</p></span></div>
+          <div><b>3</b><span><strong>Employees sign in</strong><p>In the desktop app they choose <strong>Sign in with company account</strong>; a browser opens at Microsoft's device-login page and they approve with their usual credentials and MFA. The app connects automatically.</p></span></div>
+        </div>
+        <div class="docs-callout">
+          <Icon name="triangle-alert" size={19} />
+          <div><b>Conditional Access</b><p>Some tenants block the OAuth device-code flow by policy. If employees see a sign-in error from Entra, ask IT to exempt this app from that policy.</p></div>
+        </div>
+      </section>
+
+      <section id="enrollment-codes">
+        <h2>Enrollment codes (fallback)</h2>
+        <p class="docs-lead">
+          For guests or teams without company sign-in: Machines → Create enrollment code gives a single-use
+          code that expires after 24 hours. Share the server address and the code; the employee enters both
+          in the app. Revoking a machine or suspending a person takes effect immediately.
+        </p>
+      </section>
+
+      <section id="connect">
+        <h2>Connect the desktop app (employees)</h2>
+        <div class="docs-steps">
+          <div><b>1</b><span><strong>Install Obrenna Desktop</strong><p>Download it from the <a href={routes.download}>download page</a> and launch it.</p></span></div>
+          <div><b>2</b><span><strong>Choose “Use a server on my network”</strong><p>During first-run setup — or later via Settings → Add a connection → An Obrenna-Server.</p></span></div>
+          <div><b>3</b><span><strong>Enter the server address</strong><p>For example <code>http://advancement.local:8787</code> or <code>http://192.168.1.20:8787</code>. Use plain <code>http://</code>, not <code>https://</code>.</p></span></div>
+          <div><b>4</b><span><strong>Sign in</strong><p>Click <strong>Sign in with company account</strong> and approve in the browser — or enter an enrollment code if your admin gave you one.</p></span></div>
+          <div><b>5</b><span><strong>Pick a model and work</strong><p>Choose from the models your admin approved. Prompts, files and answers stay inside your organization's network.</p></span></div>
+        </div>
+      </section>
+
+      <section id="network">
+        <h2>Network &amp; ports</h2>
+        <div class="docs-steps">
+          <div><b>8787</b><span><strong>Model gateway</strong><p>Reachable from your LAN (or VPN). This is the address employees enter.</p></span></div>
+          <div><b>8788</b><span><strong>Control panel</strong><p>Localhost-only by default. An owner can enable LAN access in Settings; it uses plain HTTP, so only do that on a trusted network.</p></span></div>
+          <div><b>11434</b><span><strong>Ollama</strong><p>Bound to loopback on the server; only the gateway talks to it.</p></span></div>
+        </div>
+        <p class="docs-lead">The server must stay powered on, and employees must be able to reach it — same LAN, or VPN for remote staff. The gateway speaks plain HTTP by design; put it behind your own TLS reverse proxy if your policy requires it.</p>
+      </section>
+
+      <section id="data">
+        <h2>Where data lives</h2>
+        <div class="docs-callout">
+          <Icon name="lock-keyhole" size={19} />
+          <div><b>Everything stays on your machine</b><p>Admin accounts, people, machine credentials (hashed), guardrails, MCP tool policies and the audit log are stored in the server's local SQLite database. Prompts and model outputs are not stored by the server. With company sign-in, the only external traffic is authentication against your own identity provider. Nothing is sent to the Obrenna website.</p></div>
+        </div>
+      </section>
+
+      <section id="troubleshooting">
+        <h2>Troubleshooting</h2>
+        <div class="docs-steps">
+          <div><b>?</b><span><strong>“Could not reach a server”</strong><p>Check the address and port, that the server is running, and that both computers are on the same network (or VPN). Use <code>http://</code>, not <code>https://</code>.</p></span></div>
+          <div><b>?</b><span><strong>Company sign-in fails at Microsoft</strong><p>Confirm the issuer uses your tenant ID, public client flows are enabled, and Conditional Access isn't blocking device-code flow.</p></span></div>
+          <div><b>?</b><span><strong>“Model not allowed”</strong><p>The model ID must be on the Guardrails allow-list, exactly as shown on the Models page.</p></span></div>
+          <div><b>?</b><span><strong>.local name doesn't resolve</strong><p>Some devices can't resolve mDNS names — use the IP address link shown in Settings → Server address.</p></span></div>
         </div>
         <div class="docs-next">
           <span>Next</span>
-          <a>Understand the local control plane and data boundary <Icon name="arrow-right" size={14} /></a>
+          <a href={routes.download}>Get the desktop app <Icon name="arrow-right" size={14} /></a>
         </div>
-      </div>
+      </section>
     </article>
-    <aside class="docs-toc docs-disabled" aria-disabled="true">
+    <aside class="docs-toc">
       <strong>ON THIS PAGE</strong>
-      <a>Current architecture</a>
-      <a>Local setup</a>
-      <a>Connect a runtime</a>
-      <a>Remote endpoint boundary</a>
+      <a href="#overview">Overview</a>
+      <a href="#install">Install the server</a>
+      <a href="#company-sign-in">Company sign-in</a>
+      <a href="#connect">Connect the app</a>
+      <a href="#network">Network &amp; ports</a>
+      <a href="#troubleshooting">Troubleshooting</a>
       <div>
         <Icon name="circle-help" size={16} />
         <b>Need help?</b>
-        <p>Public installer, enrollment and support workflows: NA.</p>
-        <a>Troubleshooting is local-only</a>
+        <p>Talk to us about your deployment.</p>
+        <a href={routes.contact}>Contact sales</a>
       </div>
     </aside>
   </main>
+  <PublicFooter />
 </BaseLayout>
-
-<script>
-  document.querySelector<HTMLButtonElement>(".docs-back-button")?.addEventListener("click", () => {
-    if (window.history.length > 1) {
-      window.history.back();
-    } else {
-      window.location.href = "/";
-    }
-  });
-</script>
