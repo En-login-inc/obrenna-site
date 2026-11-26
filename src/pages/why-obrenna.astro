@@ -28,11 +28,11 @@ const rolloutSteps: Array<[string, string]> = [
 ];
 
 const platformFeatures: Array<[string, string, string, string[]]> = [
-  ["server", "Private AI infrastructure", "Operate models on hardware and networks your organization controls.", ["Ollama, vLLM and compatible runtimes", "Multiple models and role assignments", "Health, capacity and version monitoring"]],
+  ["server", "Private AI infrastructure", "Operate models on hardware and networks your organization controls.", ["Ollama installed and managed for you", "Multiple models with an explicit allow-list", "Model availability and health in the panel"]],
   ["workflow", "Governed MCP integration", "Connect internal systems without turning every employee into an infrastructure engineer.", ["Streamable HTTP and local stdio", "Automatic discovery and schema review", "Per-tool confirmation requirements"]],
-  ["users", "Organization administration", "Manage identity, access and machines from one consistent control plane.", ["Owner, admin, member and auditor roles", "Secure invitations and session revocation", "Multiple environments and devices"]],
-  ["laptop", "Employee-ready desktop", "Approved organization configuration arrives automatically after sign-in.", ["No CLI, Python or JSON setup", "Visible models and permitted tools", "Safe failure and clear offline states"]],
-  ["shield-check", "Privacy by architecture", "The control plane handles governance while private work remains local.", ["No prompt storage by default", "Opaque credential references", "Configurable retention and telemetry"]],
+  ["users", "Organization administration", "Manage identity, access and machines from the server's local control panel.", ["Owner, admin and auditor roles", "Company sign-in (Entra ID) with per-person suspension", "Enrollment codes for guests"]],
+  ["laptop", "Employee-ready desktop", "Enter the server address, sign in with your company account, and go.", ["No CLI, Python or JSON setup", "Visible models and permitted tools", "Safe failure and clear offline states"]],
+  ["shield-check", "Privacy by architecture", "Governance and models run on your server; private work stays on employee devices.", ["No prompt storage by default", "Credentials hashed at rest", "Local, exportable audit log"]],
   ["file-check-2", "Policy and audit", "Make agent permissions understandable, reviewable and enforceable.", ["Read, network, write and destructive risk", "Never, first-use or every-use confirmation", "Redacted decision history"]],
 ];
 ---
@@ -56,7 +56,7 @@ const platformFeatures: Array<[string, string, string, string[]]> = [
           <div class="why-cards">
             <article><span>FOR IT</span><h3>One place to govern</h3><p>See machines, endpoints, services, roles and decisions across the organization.</p></article>
             <article><span>FOR ENGINEERING</span><h3>Open, compatible building blocks</h3><p>Use the model runtimes and MCP servers that fit your actual systems.</p></article>
-            <article><span>FOR EMPLOYEES</span><h3>One app that just connects</h3><p>Sign in, choose an organization and use only what has been approved.</p></article>
+            <article><span>FOR EMPLOYEES</span><h3>One app that just connects</h3><p>Enter the server address, sign in with your company account, and use only what has been approved.</p></article>
           </div>
         </div>
       </section>
@@ -99,14 +99,14 @@ const platformFeatures: Array<[string, string, string, string[]]> = [
         <div class="container">
           <div><Eyebrow>GROW AT YOUR OWN PACE</Eyebrow><h2>Start with one node.<br />Keep the path to scale.</h2></div>
           <div class="rollout-track">
-            {
-              rolloutSteps.map(([n, label], i) => (
-                <div class={i < 3 ? "complete" : ""}>
-                  <b>{n}</b>
-                  <span>{label}</span>
-                </div>
-              ))
-            }
+                {
+                rolloutSteps.map(([n, label]) => (
+                  <div class="complete">
+                    <b>{n}</b>
+                    <span>{label}</span>
+                  </div>
+                ))
+              }
           </div>
         </div>
       </section>
@@ -115,21 +115,21 @@ const platformFeatures: Array<[string, string, string, string[]]> = [
         <div class="container runtime-grid">
           <div>
             <h2>Your models. Your hardware. One governed service.</h2>
-            <p>Register endpoints without exposing runtime credentials to employees or the browser.</p>
+            <p>The server installs and manages Ollama for you, and serves an OpenAI-compatible gateway to your team — runtime credentials never reach employees or the browser.</p>
             <div class="runtime-logos">
-              <span><Icon name="box" size={16} /> Ollama</span>
-              <span><Icon name="zap" size={16} /> vLLM</span>
-              <span><Icon name="code-2" size={16} /> Compatible API</span>
+              <span><Icon name="box" size={16} /> Ollama bundled</span>
+              <span><Icon name="zap" size={16} /> Your models</span>
+              <span><Icon name="code-2" size={16} /> OpenAI-compatible gateway</span>
             </div>
           </div>
           <div class="runtime-spec">
-            <div class="spec-head"><span>Production inference</span><Status>AVAILABLE</Status></div>
+            <div class="spec-head"><span>Your Obrenna-Server</span><Status>SELF-HOSTED</Status></div>
             <dl>
-              <div><dt>Runtime</dt><dd>vLLM 0.9</dd></div>
-              <div><dt>Model role</dt><dd>Primary reasoning</dd></div>
-              <div><dt>Context limit</dt><dd>128,000 tokens</dd></div>
-              <div><dt>Credential</dt><dd>secret://prod/vllm <Icon name="lock-keyhole" size={13} /></dd></div>
-              <div><dt>Policy revision</dt><dd>v42 · approved</dd></div>
+              <div><dt>Runtime</dt><dd>Ollama (loopback only)</dd></div>
+              <div><dt>Gateway</dt><dd>http://&lt;host&gt;:8787 · LAN</dd></div>
+              <div><dt>Control panel</dt><dd>localhost:8788</dd></div>
+              <div><dt>Credentials</dt><dd>Per-machine, hashed at rest <Icon name="lock-keyhole" size={13} /></dd></div>
+              <div><dt>Guardrails</dt><dd>Enforced on every request</dd></div>
             </dl>
           </div>
         </div>
